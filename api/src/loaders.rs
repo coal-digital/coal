@@ -169,7 +169,7 @@ pub fn load_proof_with_miner<'a, 'info>(
     miner: &Pubkey,
     is_writable: bool,
 ) -> Result<(), ProgramError> {
-    if info.owner.ne(&crate::id()) && info.owner.ne(&ORE_PROGRAM_ID) {
+    if info.owner.ne(&crate::id()) {
         return Err(ProgramError::InvalidAccountOwner);
     }
 
