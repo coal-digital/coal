@@ -103,7 +103,7 @@ pub const METADATA_URI: &str = "https://coal.digital/metadata.json";
 const PROGRAM_ID: [u8; 32] = unsafe { *(&crate::id() as *const Pubkey as *const [u8; 32]) };
 
 /// ORE program id 
-pub const ORE_PROGRAM_ID: Pubkey = pubkey!("BfsNo4wCcmVLq9wcBYCv75L27RYGQRFF9iUv4nJRabeU");
+pub const ORE_PROGRAM_ID: Pubkey = pubkey!("oreV2ZymfyeXgNgBdqMkumTqqAprVqgBWQfoYkrtKWQ");
 pub const ORE_PROGRAM_ID_BYTES: [u8; 32] = unsafe { *(&ORE_PROGRAM_ID as *const Pubkey as *const [u8; 32]) };
 
 /// The addresses of the bus accounts.
