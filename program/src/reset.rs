@@ -71,8 +71,7 @@ pub fn process_reset<'a, 'info>(accounts: &'a [AccountInfo<'info>], _data: &[u8]
     let halving_factor = 2u64.pow((supply_percentage / 5.0) as u32);
     let adjusted_target_rewards = TARGET_EPOCH_REWARDS / halving_factor;
     let adjusted_bus_epoch_rewards = BUS_EPOCH_REWARDS / halving_factor;
-    let adjusted_max_epoch_rewards = MAX_EPOCH_REWARDS / halving_factor;
-    let absolute_max_threshold = (BASE_REWARD_RATE_MAX_THRESHOLD / halving_factor) * 8;    
+    let adjusted_max_epoch_rewards = MAX_EPOCH_REWARDS / halving_factor;   
 
     // Reset bus accounts and calculate actual rewards mined since last reset.
     let mut total_remaining_rewards = 0u64;
@@ -108,7 +107,8 @@ pub fn process_reset<'a, 'info>(accounts: &'a [AccountInfo<'info>], _data: &[u8]
         calculate_new_reward_rate(config.base_reward_rate, total_theoretical_rewards, adjusted_target_rewards, adjusted_bus_epoch_rewards);
 
     let adjusted_base_reward_threshold = BASE_REWARD_RATE_MIN_THRESHOLD / halving_factor;
-    let adjusted_base_reward_max_threshold = BASE_REWARD_RATE_MAX_THRESHOLD / halving_factor;   
+    let adjusted_base_reward_max_threshold = BASE_REWARD_RATE_MAX_THRESHOLD / halving_factor;
+    let absolute_max_threshold = adjusted_base_reward_max_threshold * 12;    
     // If base reward rate is too low, increment min difficulty by 1 and double base reward rate.
     if config.base_reward_rate.le(&adjusted_base_reward_threshold) {
         config.min_difficulty = config.min_difficulty.checked_add(1).unwrap();
