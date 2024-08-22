@@ -163,7 +163,8 @@ pub fn process_mine<'a, 'info>(accounts: &'a [AccountInfo<'info>], data: &[u8]) 
     //
     // Busses are limited to distributing n COAL per epoch. This is also the maximum amount that will be paid out
     // for any given hash.
-    let reward_actual = reward.min(bus.rewards);
+    // Quick fix to prevent the bus from being drained.
+    let reward_actual = reward.min(bus.rewards).max((ONE_COAL as f64 * 62.5) as u64);
 
     // Update balances.
     //
