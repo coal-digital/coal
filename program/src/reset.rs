@@ -72,7 +72,7 @@ pub fn process_reset<'a, 'info>(accounts: &'a [AccountInfo<'info>], _data: &[u8]
     let adjusted_target_rewards = TARGET_EPOCH_REWARDS / halving_factor;
     let adjusted_bus_epoch_rewards = BUS_EPOCH_REWARDS / halving_factor;
     let adjusted_max_epoch_rewards = MAX_EPOCH_REWARDS / halving_factor;
-    let absolute_max_threshold = (BASE_REWARD_RATE_MAX_THRESHOLD / halving_factor) * 6;    
+    let absolute_max_threshold = (BASE_REWARD_RATE_MAX_THRESHOLD / halving_factor) * 8;    
 
     // Reset bus accounts and calculate actual rewards mined since last reset.
     let mut total_remaining_rewards = 0u64;
