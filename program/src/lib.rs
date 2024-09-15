@@ -1,17 +1,21 @@
 mod claim;
 mod close;
-mod initialize;
+mod init_coal;
+mod init_wood;
 mod mine;
-mod open;
+mod open_coal;
+mod open_wood;
 mod reset;
 mod stake;
 mod update;
 
 use claim::*;
 use close::*;
-use initialize::*;
+use init_coal::*;
+use init_wood::*;
 use mine::*;
-use open::*;
+use open_coal::*;
+use open_wood::*;
 use reset::*;
 use stake::*;
 use update::*;
@@ -41,15 +45,17 @@ pub fn process_instruction(
         .split_first()
         .ok_or(ProgramError::InvalidInstructionData)?;
     println!("Validated instruction data");
-    match OreInstruction::try_from(*tag).or(Err(ProgramError::InvalidInstructionData))? {
-        OreInstruction::Claim => process_claim(accounts, data)?,
-        OreInstruction::Close => process_close(accounts, data)?,
-        OreInstruction::Mine => process_mine(accounts, data)?,
-        OreInstruction::Open => process_open(accounts, data)?,
-        OreInstruction::Reset => process_reset(accounts, data)?,
-        OreInstruction::Stake => process_stake(accounts, data)?,
-        OreInstruction::Update => process_update(accounts, data)?,
-        OreInstruction::Initialize => process_initialize(accounts, data)?,
+    match CoalInstruction::try_from(*tag).or(Err(ProgramError::InvalidInstructionData))? {
+        CoalInstruction::Claim => process_claim(accounts, data)?,
+        CoalInstruction::Close => process_close(accounts, data)?,
+        CoalInstruction::Mine => process_mine(accounts, data)?,
+        CoalInstruction::OpenCoal => process_open_coal(accounts, data)?,
+        CoalInstruction::OpenWood => process_open_wood(accounts, data)?,
+        CoalInstruction::Reset => process_reset(accounts, data)?,
+        CoalInstruction::Stake => process_stake(accounts, data)?,
+        CoalInstruction::Update => process_update(accounts, data)?,
+        CoalInstruction::InitCoal => process_init_coal(accounts, data)?,
+        CoalInstruction::InitWood => process_init_wood(accounts, data)?,
     }
 
     Ok(())

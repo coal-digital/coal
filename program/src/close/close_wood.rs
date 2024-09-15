@@ -1,4 +1,4 @@
-use coal_api::{loaders::*, state::Proof};
+use coal_api::{consts::WOOD_MINT_ADDRESS, loaders::*, state::ProofV2};
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
     system_program,
@@ -7,18 +7,18 @@ use solana_program::{
 use crate::utils::AccountDeserialize;
 
 /// Close closes a proof account and returns the rent to the owner.
-pub fn process_close<'a, 'info>(accounts: &'a [AccountInfo<'info>], _data: &[u8]) -> ProgramResult {
+pub fn process_close_wood<'a, 'info>(accounts: &'a [AccountInfo<'info>], _data: &[u8]) -> ProgramResult {
     // Load accounts.
     let [signer, proof_info, system_program] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
     load_signer(signer)?;
-    load_proof(proof_info, signer.key, true)?;
+    load_proof_v2(proof_info, signer.key, &WOOD_MINT_ADDRESS, true)?;
     load_program(system_program, system_program::id())?;
 
     // Validate balance is zero.
     let proof_data = proof_info.data.borrow();
-    let proof = Proof::try_from_bytes(&proof_data)?;
+    let proof = ProofV2::try_from_bytes(&proof_data)?;
     if proof.balance.gt(&0) {
         return Err(ProgramError::InvalidAccountData);
     }

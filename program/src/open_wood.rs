@@ -1,21 +1,14 @@
 use std::mem::size_of;
 
-use coal_api::{consts::*, instruction::OpenArgs, loaders::*, state::Proof};
+use coal_api::{consts::*, instruction::OpenArgs, loaders::*, state::ProofV2};
 use solana_program::{
-    account_info::AccountInfo,
-    clock::Clock,
-    entrypoint::ProgramResult,
-    keccak::hashv,
-    program_error::ProgramError,
-    slot_hashes::SlotHash,
-    system_program,
-    sysvar::{self, Sysvar},
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, keccak::hashv, program_error::ProgramError, slot_hashes::SlotHash, system_program, sysvar::{self, Sysvar}
 };
 
 use crate::utils::{create_pda, AccountDeserialize, Discriminator};
 
 /// Open creates a new proof account to track a miner's state.
-pub fn process_open<'a, 'info>(accounts: &'a [AccountInfo<'info>], data: &[u8]) -> ProgramResult {
+pub fn process_open_wood<'a, 'info>(accounts: &'a [AccountInfo<'info>], data: &[u8]) -> ProgramResult {
     // Parse args.
     let args = OpenArgs::try_from_bytes(data)?;
 
@@ -29,7 +22,7 @@ pub fn process_open<'a, 'info>(accounts: &'a [AccountInfo<'info>], data: &[u8]) 
     load_signer(payer_info)?;
     load_uninitialized_pda(
         proof_info,
-        &[PROOF, signer.key.as_ref()],
+        &[WOOD_PROOF, signer.key.as_ref()],
         args.bump,
         &coal_api::id(),
     )?;
@@ -40,18 +33,20 @@ pub fn process_open<'a, 'info>(accounts: &'a [AccountInfo<'info>], data: &[u8]) 
     create_pda(
         proof_info,
         &coal_api::id(),
-        8 + size_of::<Proof>(),
-        &[PROOF, signer.key.as_ref(), &[args.bump]],
+        8 + size_of::<ProofV2>(),
+        &[WOOD_PROOF, signer.key.as_ref(), &[args.bump]],
         system_program,
         payer_info,
     )?;
     let clock = Clock::get().or(Err(ProgramError::InvalidAccountData))?;
     let mut proof_data = proof_info.data.borrow_mut();
-    proof_data[0] = Proof::discriminator() as u8;
-    let proof = Proof::try_from_bytes_mut(&mut proof_data)?;
+    proof_data[0] = ProofV2::discriminator() as u8;
+    let proof = ProofV2::try_from_bytes_mut(&mut proof_data)?;
+    proof.resource = WOOD_MINT_ADDRESS;
     proof.authority = *signer.key;
     proof.balance = 0;
     proof.challenge = hashv(&[
+        b"wood",
         signer.key.as_ref(),
         &slot_hashes_info.data.borrow()[0..size_of::<SlotHash>()],
     ])

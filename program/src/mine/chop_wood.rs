@@ -1,14 +1,15 @@
 use std::mem::size_of;
 
-use drillx_2::Solution;
+use drillx::Solution;
 use coal_api::{
     consts::*,
-    error::OreError,
+    error::CoalError,
     event::MineEvent,
     instruction::MineArgs,
     loaders::*,
-    state::{Bus, Config, Proof},
+    state::{Bus, ProofV2, WoodConfig},
 };
+use solana_program::msg;
 #[allow(deprecated)]
 use solana_program::{
     account_info::AccountInfo,
@@ -26,8 +27,8 @@ use solana_program::{
 
 use crate::utils::AccountDeserialize;
 
-/// Mine validates hashes and increments a miner's collectable balance.
-pub fn process_mine<'a, 'info>(accounts: &'a [AccountInfo<'info>], data: &[u8]) -> ProgramResult {
+pub fn process_chop_wood(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult {
+    msg!("Processing chop wood");
     // Parse args.
     let args = MineArgs::try_from_bytes(data)?;
 
@@ -38,9 +39,9 @@ pub fn process_mine<'a, 'info>(accounts: &'a [AccountInfo<'info>], data: &[u8]) 
         return Err(ProgramError::NotEnoughAccountKeys);
     };
     load_signer(signer)?;
-    load_any_bus(bus_info, true)?;
-    load_config(config_info, false)?;
-    load_proof_with_miner(proof_info, signer.key, true)?;
+    load_any_wood_bus(bus_info, true)?;
+    load_wood_config(config_info, false)?;
+    load_proof_v2_with_miner(proof_info, signer.key, &WOOD_MINT_ADDRESS, true)?;
     load_sysvar(instructions_sysvar, sysvar::instructions::id())?;
     load_sysvar(slot_hashes_sysvar, sysvar::slot_hashes::id())?;
 
@@ -48,19 +49,19 @@ pub fn process_mine<'a, 'info>(accounts: &'a [AccountInfo<'info>], data: &[u8]) 
     //
     // Only one proof account can be used for any given transaction. All `mine` instructions
     // in the transaction must use the same proof account.
-    authenticate(&instructions_sysvar.data.borrow(), proof_info.key)?;
+    authenticate_wood_proof(&instructions_sysvar.data.borrow(), proof_info.key)?;
 
     // Validate epoch is active.
-    let config_data = config_info.data.borrow();
-    let config = Config::try_from_bytes(&config_data)?;
+    let mut config_data = config_info.data.borrow_mut();
+    let config = WoodConfig::try_from_bytes_mut(&mut config_data)?;
     let clock = Clock::get().or(Err(ProgramError::InvalidAccountData))?;
     if config
         .last_reset_at
-        .saturating_add(EPOCH_DURATION)
+        .saturating_add(WOOD_EPOCH_DURATION)
         .le(&clock.unix_timestamp)
     {
         println!("Needs reset");
-        return Err(OreError::NeedsReset.into());
+        return Err(CoalError::NeedsReset.into());
     }
 
     // Validate the hash digest.
@@ -68,10 +69,10 @@ pub fn process_mine<'a, 'info>(accounts: &'a [AccountInfo<'info>], data: &[u8]) 
     // Here we use drillx_2 to validate the provided solution is a valid hash of the challenge.
     // If invalid, we return an error.
     let mut proof_data = proof_info.data.borrow_mut();
-    let proof = Proof::try_from_bytes_mut(&mut proof_data)?;
+    let proof = ProofV2::try_from_bytes_mut(&mut proof_data)?;
     let solution = Solution::new(args.digest, args.nonce);
     if !solution.is_valid(&proof.challenge) {
-        return Err(OreError::HashInvalid.into());
+        return Err(CoalError::HashInvalid.into());
     }
 
     // Reject spam transactions.
@@ -82,7 +83,7 @@ pub fn process_mine<'a, 'info>(accounts: &'a [AccountInfo<'info>], data: &[u8]) 
     let t_target = proof.last_hash_at.saturating_add(ONE_MINUTE);
     let t_spam = t_target.saturating_sub(TOLERANCE);
     if t.lt(&t_spam) {
-        return Err(OreError::Spam.into());
+        return Err(CoalError::Spam.into());
     }
 
     // Validate the hash satisfies the minimum difficulty.
@@ -92,7 +93,7 @@ pub fn process_mine<'a, 'info>(accounts: &'a [AccountInfo<'info>], data: &[u8]) 
     let hash = solution.to_hash();
     let difficulty = hash.difficulty();
     if difficulty.lt(&(config.min_difficulty as u32)) {
-        return Err(OreError::HashTooEasy.into());
+        return Err(CoalError::HashTooEasy.into());
     }
 
     // Normalize the difficulty and calculate the reward amount.
@@ -107,24 +108,25 @@ pub fn process_mine<'a, 'info>(accounts: &'a [AccountInfo<'info>], data: &[u8]) 
         .checked_mul(2u64.checked_pow(normalized_difficulty).unwrap())
         .unwrap();
 
-    // Apply staking multiplier.
+    // Increment total hash power and apply staking multiplier.
     //
     // If user has greater than or equal to the max stake on the network, they receive 2x multiplier.
     // Any stake less than this will receives between 1x and 2x multipler. The multipler is only active
     // if the miner's last stake deposit was more than one minute ago to protect against flash loan attacks.
     let mut bus_data = bus_info.data.borrow_mut();
     let bus = Bus::try_from_bytes_mut(&mut bus_data)?;
+    
     if proof.balance.gt(&0) && proof.last_stake_at.saturating_add(ONE_MINUTE).lt(&t) {
         // Calculate staking reward.
         if config.top_balance.gt(&0) {
             let staking_reward = (reward as u128)
-                .checked_mul(proof.balance.min(config.top_balance) as u128)
-                .unwrap()
-                .checked_div(config.top_balance as u128)
-                .unwrap() as u64;
+            .checked_mul(proof.balance.min(config.top_balance) as u128)
+            .unwrap()
+            .checked_div(config.top_balance as u128)
+            .unwrap() as u64;
             reward = reward.checked_add(staking_reward).unwrap();
         }
-
+    
         // Update bus stake tracker.
         if proof.balance.gt(&bus.top_balance) {
             bus.top_balance = proof.balance;
@@ -139,7 +141,7 @@ pub fn process_mine<'a, 'info>(accounts: &'a [AccountInfo<'info>], data: &[u8]) 
     //
     // The penalty works by halving the reward amount for every minute late the solution has been submitted.
     // This ultimately drives the reward to zero given enough time (10-20 minutes).
-    let t_liveness = t_target.saturating_add(TOLERANCE);
+    let t_liveness = t_target.saturating_add(WOOD_LIVENESS_TOLERANCE);
     if t.gt(&t_liveness) {
         // Halve the reward for every minute late.
         let tardiness = t.saturating_sub(t_target) as u64;
@@ -163,8 +165,7 @@ pub fn process_mine<'a, 'info>(accounts: &'a [AccountInfo<'info>], data: &[u8]) 
     //
     // Busses are limited to distributing n COAL per epoch. This is also the maximum amount that will be paid out
     // for any given hash.
-    // Quick fix to prevent the bus from being drained.
-    let reward_actual = reward.min(bus.rewards).min((ONE_COAL as f64 * 62.5) as u64);
+    let reward_actual = reward.min(bus.rewards);
 
     // Update balances.
     //
@@ -180,6 +181,7 @@ pub fn process_mine<'a, 'info>(accounts: &'a [AccountInfo<'info>], data: &[u8]) 
     // miners are forced to submit their current solution before they can begin mining for the next.
     proof.last_hash = hash.h;
     proof.challenge = hashv(&[
+        b"wood",
         hash.h.as_slice(),
         &slot_hashes_sysvar.data.borrow()[0..size_of::<SlotHash>()],
     ])
@@ -207,54 +209,47 @@ pub fn process_mine<'a, 'info>(accounts: &'a [AccountInfo<'info>], data: &[u8]) 
     Ok(())
 }
 
-/// Authenticate the proof account.
-///
-/// This process is necessary to prevent sybil attacks. If a user can pack multiple hashes into a single
-/// transaction, then there is a financial incentive to mine across multiple keypairs and submit as many hashes
-/// as possible in the same transaction to minimize fee / hash.
-///
-/// This is prevented by forcing every transaction to declare upfront the proof account that will be used for mining.
-/// The authentication process includes passing the 32 byte pubkey address as instruction data to a CU-optimized noop
-/// program. We parse this address through transaction introspection and use it to ensure the same proof account is
-/// used for every `mine` instruction in a given transaction.
-fn authenticate(data: &[u8], proof_address: &Pubkey) -> ProgramResult {
-    if let Ok(Some(auth_address)) = parse_auth_address(data) {
+fn authenticate_wood_proof(data: &[u8], proof_address: &Pubkey) -> ProgramResult {
+    if let Ok(Some(auth_address)) = parse_wood_auth_address(data) {
         if proof_address.ne(&auth_address) {
-            return Err(OreError::AuthFailed.into());
+            return Err(CoalError::AuthFailed.into());
         }
     } else {
-        return Err(OreError::AuthFailed.into());
+        return Err(CoalError::AuthFailed.into());
     }
     Ok(())
 }
 
+
 /// Use transaction introspection to parse the authenticated pubkey.
-fn parse_auth_address(data: &[u8]) -> Result<Option<Pubkey>, SanitizeError> {
+fn parse_wood_auth_address(data: &[u8]) -> Result<Option<Pubkey>, SanitizeError> {
+    // Start the current byte index at 0
     let mut curr = 0;
     let num_instructions = read_u16(&mut curr, data)?;
     let pc = curr;
 
-    let mut noop_count = 0;
-
+    // Iterate through the transaction instructions
     for i in 0..num_instructions as usize {
+        // Shift pointer to correct positition
         curr = pc + i * 2;
         curr = read_u16(&mut curr, data)? as usize;
 
+        // Skip accounts
         let num_accounts = read_u16(&mut curr, data)? as usize;
         curr += num_accounts * 33;
 
+        // Read the instruction program id
         let program_id = read_pubkey(&mut curr, data)?;
 
+        // Introspect on the first noop instruction
         if program_id.eq(&NOOP_PROGRAM_ID) {
-            noop_count += 1;
-            
-            if noop_count == 2 {
-                curr += 2;
-                let address = read_pubkey(&mut curr, data)?;
-                return Ok(Some(address));
-            }
+            // Retrun address read from instruction data
+            curr += 2;
+            let address = read_pubkey(&mut curr, data)?;
+            return Ok(Some(address));
         }
     }
 
+    // Default return none
     Ok(None)
 }

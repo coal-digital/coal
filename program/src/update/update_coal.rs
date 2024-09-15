@@ -6,7 +6,7 @@ use solana_program::{
 use crate::utils::AccountDeserialize;
 
 /// Update changes the miner authority on a proof account.
-pub fn process_update<'a, 'info>(
+pub fn process_update_coal<'a, 'info>(
     accounts: &'a [AccountInfo<'info>],
     _data: &[u8],
 ) -> ProgramResult {
@@ -16,7 +16,7 @@ pub fn process_update<'a, 'info>(
     };
     load_signer(signer)?;
     load_any(miner_info, false)?;
-    load_proof(proof_info, signer.key, true)?;
+    load_coal_proof(proof_info, signer.key, true)?;
 
     // Update the proof's miner authority.
     let mut proof_data = proof_info.data.borrow_mut();

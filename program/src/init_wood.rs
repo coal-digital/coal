@@ -4,7 +4,7 @@ use coal_api::{
     consts::*,
     instruction::*,
     loaders::*,
-    state::{Bus, Config, Treasury},
+    state::{Bus, WoodConfig},
 };
 use coal_utils::spl::create_ata;
 use solana_program::{
@@ -19,7 +19,7 @@ use spl_token::state::Mint;
 use crate::utils::{create_pda, AccountDeserialize, Discriminator};
 
 /// Initialize sets up the ORE program to begin mining.
-pub fn process_initialize<'a, 'info>(
+pub fn process_init_wood<'a, 'info>(
     accounts: &'a [AccountInfo<'info>],
     data: &[u8],
 ) -> ProgramResult {
@@ -33,35 +33,29 @@ pub fn process_initialize<'a, 'info>(
         return Err(ProgramError::NotEnoughAccountKeys);
     };
     load_signer(signer)?;
-    load_uninitialized_pda(bus_0_info, &[BUS, &[0]], args.bus_0_bump, &coal_api::id())?;
-    load_uninitialized_pda(bus_1_info, &[BUS, &[1]], args.bus_1_bump, &coal_api::id())?;
-    load_uninitialized_pda(bus_2_info, &[BUS, &[2]], args.bus_2_bump, &coal_api::id())?;
-    load_uninitialized_pda(bus_3_info, &[BUS, &[3]], args.bus_3_bump, &coal_api::id())?;
-    load_uninitialized_pda(bus_4_info, &[BUS, &[4]], args.bus_4_bump, &coal_api::id())?;
-    load_uninitialized_pda(bus_5_info, &[BUS, &[5]], args.bus_5_bump, &coal_api::id())?;
-    load_uninitialized_pda(bus_6_info, &[BUS, &[6]], args.bus_6_bump, &coal_api::id())?;
-    load_uninitialized_pda(bus_7_info, &[BUS, &[7]], args.bus_7_bump, &coal_api::id())?;
-    load_uninitialized_pda(config_info, &[CONFIG], args.config_bump, &coal_api::id())?;
+    load_uninitialized_pda(bus_0_info, &[WOOD_BUS, &[0]], args.bus_0_bump, &coal_api::id())?;
+    load_uninitialized_pda(bus_1_info, &[WOOD_BUS, &[1]], args.bus_1_bump, &coal_api::id())?;
+    load_uninitialized_pda(bus_2_info, &[WOOD_BUS, &[2]], args.bus_2_bump, &coal_api::id())?;
+    load_uninitialized_pda(bus_3_info, &[WOOD_BUS, &[3]], args.bus_3_bump, &coal_api::id())?;
+    load_uninitialized_pda(bus_4_info, &[WOOD_BUS, &[4]], args.bus_4_bump, &coal_api::id())?;
+    load_uninitialized_pda(bus_5_info, &[WOOD_BUS, &[5]], args.bus_5_bump, &coal_api::id())?;
+    load_uninitialized_pda(bus_6_info, &[WOOD_BUS, &[6]], args.bus_6_bump, &coal_api::id())?;
+    load_uninitialized_pda(bus_7_info, &[WOOD_BUS, &[7]], args.bus_7_bump, &coal_api::id())?;
+    load_uninitialized_pda(config_info, &[WOOD_CONFIG], args.config_bump, &coal_api::id())?;
     load_uninitialized_pda(
         metadata_info,
         &[
             METADATA,
             mpl_token_metadata::ID.as_ref(),
-            MINT_ADDRESS.as_ref(),
+            WOOD_MINT_ADDRESS.as_ref(),
         ],
         args.metadata_bump,
         &mpl_token_metadata::ID,
     )?;
     load_uninitialized_pda(
         mint_info,
-        &[MINT, MINT_NOISE.as_slice()],
+        &[WOOD_MINT, MINT_NOISE.as_slice()],
         args.mint_bump,
-        &coal_api::id(),
-    )?;
-    load_uninitialized_pda(
-        treasury_info,
-        &[TREASURY],
-        args.treasury_bump,
         &coal_api::id(),
     )?;
     load_system_account(treasury_tokens_info, true)?;
@@ -96,7 +90,7 @@ pub fn process_initialize<'a, 'info>(
             bus_infos[i],
             &coal_api::id(),
             8 + size_of::<Bus>(),
-            &[BUS, &[i as u8], &[bus_bumps[i]]],
+            &[WOOD_BUS, &[i as u8], &[bus_bumps[i]]],
             system_program,
             signer,
         )?;
@@ -104,7 +98,7 @@ pub fn process_initialize<'a, 'info>(
         bus_data[0] = Bus::discriminator() as u8;
         let bus = Bus::try_from_bytes_mut(&mut bus_data)?;
         bus.id = i as u64;
-        bus.rewards = 0;
+        bus.rewards = INITIAL_WOOD_EPOCH_REWARDS;
         bus.theoretical_rewards = 0;
         bus.top_balance = 0;
     }
@@ -113,38 +107,26 @@ pub fn process_initialize<'a, 'info>(
     create_pda(
         config_info,
         &coal_api::id(),
-        8 + size_of::<Config>(),
-        &[CONFIG, &[args.config_bump]],
+        8 + size_of::<WoodConfig>(),
+        &[WOOD_CONFIG, &[args.config_bump]],
         system_program,
         signer,
     )?;
     let mut config_data = config_info.data.borrow_mut();
-    config_data[0] = Config::discriminator() as u8;
-    let config = Config::try_from_bytes_mut(&mut config_data)?;
-    config.base_reward_rate = INITIAL_BASE_REWARD_RATE;
+    config_data[0] = WoodConfig::discriminator() as u8;
+    let config = WoodConfig::try_from_bytes_mut(&mut config_data)?;
+    config.base_reward_rate = INITIAL_BASE_WOOD_REWARD_RATE;
     config.last_reset_at = 0;
     config.min_difficulty = INITIAL_MIN_DIFFICULTY as u64;
     config.top_balance = 0;
-
-    // Initialize treasury.
-    create_pda(
-        treasury_info,
-        &coal_api::id(),
-        8 + size_of::<Treasury>(),
-        &[TREASURY, &[args.treasury_bump]],
-        system_program,
-        signer,
-    )?;
-    let mut treasury_data = treasury_info.data.borrow_mut();
-    treasury_data[0] = Treasury::discriminator() as u8;
-    drop(treasury_data);
+    config.total_epoch_rewards = 0;
 
     // Initialize mint.
     create_pda(
         mint_info,
         &spl_token::id(),
         Mint::LEN,
-        &[MINT, MINT_NOISE.as_slice(), &[args.mint_bump]],
+        &[WOOD_MINT, MINT_NOISE.as_slice(), &[args.mint_bump]],
         system_program,
         signer,
     )?;
@@ -162,7 +144,7 @@ pub fn process_initialize<'a, 'info>(
             treasury_info.clone(),
             rent_sysvar.clone(),
         ],
-        &[&[MINT, MINT_NOISE.as_slice(), &[args.mint_bump]]],
+        &[&[WOOD_MINT, MINT_NOISE.as_slice(), &[args.mint_bump]]],
     )?;
 
     // Initialize mint metadata.
@@ -177,9 +159,9 @@ pub fn process_initialize<'a, 'info>(
         rent: Some(rent_sysvar),
         __args: mpl_token_metadata::instructions::CreateMetadataAccountV3InstructionArgs {
             data: mpl_token_metadata::types::DataV2 {
-                name: METADATA_NAME.to_string(),
-                symbol: METADATA_SYMBOL.to_string(),
-                uri: METADATA_URI.to_string(),
+                name: WOOD_METADATA_NAME.to_string(),
+                symbol: WOOD_METADATA_SYMBOL.to_string(),
+                uri: WOOD_METADATA_URI.to_string(),
                 seller_fee_basis_points: 0,
                 creators: None,
                 collection: None,
