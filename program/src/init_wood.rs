@@ -119,7 +119,7 @@ pub fn process_init_wood<'a, 'info>(
     config.last_reset_at = 0;
     config.min_difficulty = INITIAL_MIN_DIFFICULTY as u64;
     config.top_balance = 0;
-    config.total_epoch_rewards = INITIAL_WOOD_EPOCH_REWARDS;
+    config.total_epoch_rewards = 0;
 
     // Initialize mint.
     create_pda(
