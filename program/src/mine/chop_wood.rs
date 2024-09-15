@@ -40,15 +40,10 @@ pub fn process_chop_wood(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
     };
     load_signer(signer)?;
     load_any_wood_bus(bus_info, true)?;
-    msg!("Loaded WOOD bus account");
     load_wood_config(config_info, false)?;
-    msg!("Loaded WOOD config account");
     load_proof_v2_with_miner(proof_info, signer.key, &WOOD_MINT_ADDRESS, true)?;
-    msg!("Loaded WOOD proof account");
     load_sysvar(instructions_sysvar, sysvar::instructions::id())?;
-    msg!("Loaded instructions sysvar");
     load_sysvar(slot_hashes_sysvar, sysvar::slot_hashes::id())?;
-    msg!("Loaded slot hashes sysvar");
 
     // Authenticate the proof account.
     //
@@ -170,8 +165,7 @@ pub fn process_chop_wood(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
     //
     // Busses are limited to distributing n COAL per epoch. This is also the maximum amount that will be paid out
     // for any given hash.
-    // Quick fix to prevent the bus from being drained.
-    let reward_actual = reward.min(bus.rewards).min((ONE_COAL as f64 * 62.5) as u64);
+    let reward_actual = reward.min(bus.rewards);
 
     // Update balances.
     //

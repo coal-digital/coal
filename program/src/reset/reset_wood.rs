@@ -78,7 +78,6 @@ pub fn process_reset_wood<'a, 'info>(accounts: &'a [AccountInfo<'info>], _data: 
     }
 
     let total_epoch_rewards = config.total_epoch_rewards.saturating_sub(total_remaining_rewards).max(0);
-    let next_epoch_bus_rewards = next_epoch_rewards.saturating_div(BUS_COUNT as u64);
 
     // Update global top balance.
     config.top_balance = top_balance;
@@ -89,10 +88,9 @@ pub fn process_reset_wood<'a, 'info>(accounts: &'a [AccountInfo<'info>], _data: 
     msg!("Total remaining rewards: {}", total_remaining_rewards);
     msg!("Total theoretical rewards: {}", total_theoretical_rewards);
     msg!("Next epoch rewards: {}", next_epoch_rewards);
-    msg!("Next epoch bus rewards: {}", next_epoch_bus_rewards);
     // Update base reward rate for next epoch.
     config.base_reward_rate =
-        calculate_new_reward_rate(config.base_reward_rate, total_theoretical_rewards, next_epoch_rewards, next_epoch_bus_rewards);
+        calculate_new_reward_rate(config.base_reward_rate, total_theoretical_rewards, next_epoch_rewards, next_epoch_rewards);
     msg!("New base reward rate: {}", config.base_reward_rate);
 
     // If base reward rate is too low, increment min difficulty by 1 and double base reward rate.

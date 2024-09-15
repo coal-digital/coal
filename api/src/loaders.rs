@@ -219,7 +219,6 @@ pub fn load_wood_config<'a, 'info>(
     }
 
     if info.data.borrow()[0].ne(&(WoodConfig::discriminator() as u8)) {
-        msg!("Invalid discriminator");
         return Err(solana_program::program_error::ProgramError::InvalidAccountData);
     }
 

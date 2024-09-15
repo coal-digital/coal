@@ -8,7 +8,6 @@ mod open_wood;
 mod reset;
 mod stake;
 mod update;
-mod patch_wood;
 
 use claim::*;
 use close::*;
@@ -20,7 +19,6 @@ use open_wood::*;
 use reset::*;
 use stake::*;
 use update::*;
-use patch_wood::*;
 
 use coal_api::instruction::*;
 use solana_program::{
@@ -58,7 +56,6 @@ pub fn process_instruction(
         CoalInstruction::Update => process_update(accounts, data)?,
         CoalInstruction::InitCoal => process_init_coal(accounts, data)?,
         CoalInstruction::InitWood => process_init_wood(accounts, data)?,
-        CoalInstruction::PatchWood => process_patch_wood(accounts, data)?,
     }
 
     Ok(())

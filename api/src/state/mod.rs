@@ -20,6 +20,5 @@ pub enum AccountDiscriminator {
     Proof = 102,
     Treasury = 103,
     ProofV2 = 104,
-    WoodBus = 105,
     WoodConfig = 106,
 }
