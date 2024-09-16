@@ -60,8 +60,8 @@ pub const WOOD_EXTRACTION_MULTIPLIER: u64 = 10;
 /// The target quantity of COAL to be mined per epoch.
 pub const TARGET_COAL_EPOCH_REWARDS: u64 = ONE_COAL * COAL_EXTRACTION_MULTIPLIER * COAL_EPOCH_MINUTES as u64;
 
-/// The initial quantity of WOOD distributed to each bus (100 WOOD).
-pub const INITIAL_WOOD_EPOCH_REWARDS: u64 = ONE_WOOD * 100;
+/// The initial quantity of WOOD distributed to each bus (1000 WOOD).
+pub const INITIAL_WOOD_EPOCH_REWARDS: u64 = ONE_WOOD * 1000;
 
 /// The minimum rewards a bus can have for each epoch.
 pub const MIN_WOOD_EPOCH_REWARDS: u64 = BASE_WOOD_REWARD_RATE_MAX_THRESHOLD * BUS_COUNT as u64 * WOOD_EPOCH_MINUTES as u64;

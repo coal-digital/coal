@@ -72,17 +72,26 @@ pub fn process_reset_wood<'a, 'info>(accounts: &'a [AccountInfo<'info>], _data: 
         total_remaining_rewards = total_remaining_rewards.saturating_add(bus.rewards);
         total_theoretical_rewards = total_theoretical_rewards.saturating_add(bus.theoretical_rewards);
 
-        // Bus rewards grow by 5% each epoch.
-        bus.rewards = bus.rewards.saturating_add(bus.rewards.saturating_div(WOOD_PROPOGATION_RATE)).max(MIN_WOOD_EPOCH_REWARDS);
-        next_epoch_rewards = next_epoch_rewards.saturating_add(bus.rewards);
+        // Reset bus account for new epoch.
+        bus.theoretical_rewards = 0;
+        bus.top_balance = 0;
     }
 
-    let total_epoch_rewards = config.total_epoch_rewards.saturating_sub(total_remaining_rewards).max(0);
-
+    
+    for i in 0..BUS_COUNT {
+        let mut bus_data = busses[i].data.borrow_mut();
+        let bus = Bus::try_from_bytes_mut(&mut bus_data)?;
+        
+        // Distribute remaining rewards to each bus with 5% growth rate.
+        bus.rewards = total_remaining_rewards.saturating_div(BUS_COUNT as u64).saturating_add(bus.rewards.saturating_div(WOOD_PROPOGATION_RATE)).max(MIN_WOOD_EPOCH_REWARDS);
+        next_epoch_rewards = next_epoch_rewards.saturating_add(bus.rewards);
+    }
+    
     // Update global top balance.
     config.top_balance = top_balance;
-
+    
     // Update the rewards for the next epoch.
+    let total_epoch_rewards = config.total_epoch_rewards.saturating_sub(total_remaining_rewards).max(0);
     config.total_epoch_rewards = next_epoch_rewards;
 
     msg!("Total remaining rewards: {}", total_remaining_rewards);
@@ -103,6 +112,9 @@ pub fn process_reset_wood<'a, 'info>(accounts: &'a [AccountInfo<'info>], _data: 
     if config.base_reward_rate.ge(&BASE_WOOD_REWARD_RATE_MAX_THRESHOLD) && config.min_difficulty.gt(&1) {
         config.min_difficulty = config.min_difficulty.checked_sub(1).unwrap();
         config.base_reward_rate = config.base_reward_rate.checked_div(2).unwrap();
+        msg!("Base reward rate too high, decremented min difficulty by 1 and halved base reward rate.");
+        msg!("New base reward rate: {}", config.base_reward_rate);
+        msg!("New min difficulty: {}", config.min_difficulty);
     }
 
     
