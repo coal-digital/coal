@@ -83,6 +83,8 @@ pub const BUS_COUNT: usize = 8;
 /// The smoothing factor for reward rate changes. The reward rate cannot change by mCOAL or less
 /// than a factor of this constant from one epoch to the next.
 pub const SMOOTHING_FACTOR: u64 = 2;
+// WOOD delcines at a faster rate to prevent busses emptying too quickly
+pub const WOOD_DECREMENTAL_SMOOTHING_FACTOR: u64 = 10;
 
 // Assert MAX_EPOCH_REWARDS is evenly divisible by BUS_COUNT.
 static_assertions::const_assert!(

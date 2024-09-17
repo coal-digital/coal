@@ -98,8 +98,14 @@ pub fn process_reset_wood<'a, 'info>(accounts: &'a [AccountInfo<'info>], _data: 
     msg!("Total theoretical rewards: {}", total_theoretical_rewards);
     msg!("Next epoch rewards: {}", next_epoch_rewards);
     // Update base reward rate for next epoch.
-    config.base_reward_rate =
-        calculate_new_reward_rate(config.base_reward_rate, total_theoretical_rewards, next_epoch_rewards, next_epoch_rewards);
+    config.base_reward_rate = calculate_new_reward_rate(
+        config.base_reward_rate, 
+        total_theoretical_rewards, 
+        next_epoch_rewards, 
+        next_epoch_rewards,
+        WOOD_DECREMENTAL_SMOOTHING_FACTOR,
+        SMOOTHING_FACTOR,
+    );
     msg!("New base reward rate: {}", config.base_reward_rate);
 
     // If base reward rate is too low, increment min difficulty by 1 and double base reward rate.
