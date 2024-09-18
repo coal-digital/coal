@@ -1,4 +1,4 @@
-use coal_api::{consts::*, state::{Config, WoodConfig}};
+use coal_api::state::{Config, WoodConfig};
 use solana_program::{
     account_info::AccountInfo, 
     entrypoint::ProgramResult,

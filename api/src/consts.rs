@@ -64,7 +64,7 @@ pub const TARGET_COAL_EPOCH_REWARDS: u64 = ONE_COAL * COAL_EXTRACTION_MULTIPLIER
 pub const INITIAL_WOOD_EPOCH_REWARDS: u64 = ONE_WOOD * 1000;
 
 /// The minimum rewards a bus can have for each epoch.
-pub const MIN_WOOD_EPOCH_REWARDS: u64 = BASE_WOOD_REWARD_RATE_MAX_THRESHOLD * BUS_COUNT as u64 * WOOD_EPOCH_MINUTES as u64;
+pub const MIN_WOOD_EPOCH_REWARDS: u64 = ONE_WOOD / 10;
 
 /// WOOD propogation rate is 5% per epoch
 /// New bus rewards = remaining + (remaining rewards / WOOD_PROPOGATION_RATE)

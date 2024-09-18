@@ -77,13 +77,22 @@ pub fn process_reset_wood<'a, 'info>(accounts: &'a [AccountInfo<'info>], _data: 
         bus.top_balance = 0;
     }
 
-    
+    let total_epoch_rewards = config.total_epoch_rewards.saturating_sub(total_remaining_rewards).max(0);
+
+    // Calculate propogation for next epoch.
+    // If total_epoch_rewards is 0, double propogation rate (i.e. 10%).
+    let propogation_rate = if total_epoch_rewards.eq(&0) {
+        WOOD_PROPOGATION_RATE / 2
+    } else {
+        WOOD_PROPOGATION_RATE
+    };
+
     for i in 0..BUS_COUNT {
         let mut bus_data = busses[i].data.borrow_mut();
         let bus = Bus::try_from_bytes_mut(&mut bus_data)?;
         
         // Distribute remaining rewards to each bus with 5% growth rate.
-        bus.rewards = total_remaining_rewards.saturating_div(BUS_COUNT as u64).saturating_add(bus.rewards.saturating_div(WOOD_PROPOGATION_RATE)).max(MIN_WOOD_EPOCH_REWARDS);
+        bus.rewards = total_remaining_rewards.saturating_div(BUS_COUNT as u64).saturating_add(bus.rewards.saturating_div(propogation_rate)).max(MIN_WOOD_EPOCH_REWARDS);
         next_epoch_rewards = next_epoch_rewards.saturating_add(bus.rewards);
     }
     
@@ -91,22 +100,20 @@ pub fn process_reset_wood<'a, 'info>(accounts: &'a [AccountInfo<'info>], _data: 
     config.top_balance = top_balance;
     
     // Update the rewards for the next epoch.
-    let total_epoch_rewards = config.total_epoch_rewards.saturating_sub(total_remaining_rewards).max(0);
     config.total_epoch_rewards = next_epoch_rewards;
 
-    msg!("Total remaining rewards: {}", total_remaining_rewards);
-    msg!("Total theoretical rewards: {}", total_theoretical_rewards);
-    msg!("Next epoch rewards: {}", next_epoch_rewards);
     // Update base reward rate for next epoch.
-    config.base_reward_rate = calculate_new_reward_rate(
-        config.base_reward_rate, 
-        total_theoretical_rewards, 
-        next_epoch_rewards, 
-        next_epoch_rewards,
-        WOOD_DECREMENTAL_SMOOTHING_FACTOR,
-        SMOOTHING_FACTOR,
-    );
-    msg!("New base reward rate: {}", config.base_reward_rate);
+    // Rewards remain unchanged if total_epoch_rewards is 0.
+    if total_epoch_rewards.gt(&0) {
+        config.base_reward_rate = calculate_new_reward_rate(
+            config.base_reward_rate, 
+            total_theoretical_rewards, 
+            next_epoch_rewards, 
+            next_epoch_rewards,
+            WOOD_DECREMENTAL_SMOOTHING_FACTOR,
+            SMOOTHING_FACTOR,
+        );
+    }
 
     // If base reward rate is too low, increment min difficulty by 1 and double base reward rate.
     if config.base_reward_rate.le(&BASE_WOOD_REWARD_RATE_MIN_THRESHOLD) {
@@ -118,9 +125,6 @@ pub fn process_reset_wood<'a, 'info>(accounts: &'a [AccountInfo<'info>], _data: 
     if config.base_reward_rate.ge(&BASE_WOOD_REWARD_RATE_MAX_THRESHOLD) && config.min_difficulty.gt(&1) {
         config.min_difficulty = config.min_difficulty.checked_sub(1).unwrap();
         config.base_reward_rate = config.base_reward_rate.checked_div(2).unwrap();
-        msg!("Base reward rate too high, decremented min difficulty by 1 and halved base reward rate.");
-        msg!("New base reward rate: {}", config.base_reward_rate);
-        msg!("New min difficulty: {}", config.min_difficulty);
     }
 
     
