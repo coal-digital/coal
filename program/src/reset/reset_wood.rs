@@ -57,7 +57,6 @@ pub fn process_reset_wood<'a, 'info>(accounts: &'a [AccountInfo<'info>], _data: 
     let mut top_balance: u64 = 0u64;
     let mut total_remaining_rewards = 0u64;
     let mut total_theoretical_rewards = 0u64;
-    let mut next_epoch_rewards = 0u64;
     
     for i in 0..BUS_COUNT {
         // Parse bus account.
@@ -80,6 +79,7 @@ pub fn process_reset_wood<'a, 'info>(accounts: &'a [AccountInfo<'info>], _data: 
     let total_epoch_rewards = config.total_epoch_rewards.saturating_sub(total_remaining_rewards).max(0);
 
     // Calculate propogation for next epoch.
+    let mut next_epoch_rewards = 0u64;
     // If total_epoch_rewards is 0, double propogation rate (i.e. 10%).
     let propogation_rate = if total_epoch_rewards.eq(&0) {
         WOOD_PROPOGATION_RATE / 2
@@ -92,7 +92,9 @@ pub fn process_reset_wood<'a, 'info>(accounts: &'a [AccountInfo<'info>], _data: 
         let bus = Bus::try_from_bytes_mut(&mut bus_data)?;
         
         // Distribute remaining rewards to each bus with 5% growth rate.
-        bus.rewards = total_remaining_rewards.saturating_div(BUS_COUNT as u64).saturating_add(bus.rewards.saturating_div(propogation_rate)).max(MIN_WOOD_EPOCH_REWARDS);
+        bus.rewards = total_remaining_rewards.saturating_div(BUS_COUNT as u64).saturating_add(
+            bus.rewards.saturating_div(propogation_rate)
+        ).max(MIN_WOOD_EPOCH_REWARDS).min(MAX_WOOD_EPOCH_REWARDS);
         next_epoch_rewards = next_epoch_rewards.saturating_add(bus.rewards);
     }
     
@@ -103,13 +105,14 @@ pub fn process_reset_wood<'a, 'info>(accounts: &'a [AccountInfo<'info>], _data: 
     config.total_epoch_rewards = next_epoch_rewards;
 
     // Update base reward rate for next epoch.
+    let target_rewards = next_epoch_rewards.saturating_div(BUS_COUNT as u64);
     // Rewards remain unchanged if total_epoch_rewards is 0.
     if total_epoch_rewards.gt(&0) {
         config.base_reward_rate = calculate_new_reward_rate(
             config.base_reward_rate, 
             total_theoretical_rewards, 
-            next_epoch_rewards, 
-            next_epoch_rewards,
+            target_rewards, 
+            target_rewards,
             WOOD_DECREMENTAL_SMOOTHING_FACTOR,
             SMOOTHING_FACTOR,
         );

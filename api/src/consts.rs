@@ -10,7 +10,7 @@ pub const INITIAL_BASE_COAL_REWARD_RATE: u64 = BASE_COAL_REWARD_RATE_MIN_THRESHO
 pub const INITIAL_BASE_WOOD_REWARD_RATE: u64 = BASE_WOOD_REWARD_RATE_MIN_THRESHOLD;
 
 /// The minimum allowed base reward rate, at which point the min difficulty should be increased
-pub const BASE_COAL_REWARD_RATE_MIN_THRESHOLD: u64 = 2u64.pow(5) * COAL_EXTRACTION_MULTIPLIER;
+pub const BASE_COAL_REWARD_RATE_MIN_THRESHOLD: u64 = 2u64.pow(5);
 
 /// The maximum allowed base reward rate, at which point the min difficulty should be decreased.
 pub const BASE_COAL_REWARD_RATE_MAX_THRESHOLD: u64 = 2u64.pow(8) * COAL_EXTRACTION_MULTIPLIER;
@@ -63,8 +63,10 @@ pub const TARGET_COAL_EPOCH_REWARDS: u64 = ONE_COAL * COAL_EXTRACTION_MULTIPLIER
 /// The initial quantity of WOOD distributed to each bus (1000 WOOD).
 pub const INITIAL_WOOD_EPOCH_REWARDS: u64 = ONE_WOOD * 1000;
 
-/// The minimum rewards a bus can have for each epoch.
+/// The minimum rewards a bus can have for each epoch 0.1 WOOD
 pub const MIN_WOOD_EPOCH_REWARDS: u64 = ONE_WOOD / 10;
+/// The maximum rewards a bus can have for each epoch 4000 WOOD
+pub const MAX_WOOD_EPOCH_REWARDS: u64 = ONE_WOOD * 4000;
 
 /// WOOD propogation rate is 5% per epoch
 /// New bus rewards = remaining + (remaining rewards / WOOD_PROPOGATION_RATE)
