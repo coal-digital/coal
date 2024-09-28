@@ -25,6 +25,8 @@ pub enum CoalInstruction {
     Stake = 5,
     Update = 6,
     OpenWood = 7,
+    Equip = 8,
+    Unequip = 9,
     // Admin
     InitCoal = 100,
     InitWood = 101,
@@ -57,6 +59,19 @@ pub struct InitializeArgs {
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
 pub struct OpenArgs {
     pub bump: u8,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Pod, Zeroable)]
+pub struct EquipArgs {
+    pub bump: u8,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Pod, Zeroable)]
+pub struct UnequipArgs {
+    pub bump: u8,
+    pub plugin_authority_bump: u8,
 }
 
 #[repr(C)]
@@ -97,6 +112,8 @@ impl_to_bytes!(MineArgs);
 impl_to_bytes!(ClaimArgs);
 impl_to_bytes!(StakeArgs);
 impl_to_bytes!(UpgradeArgs);
+impl_to_bytes!(EquipArgs);
+impl_to_bytes!(UnequipArgs);
 
 impl_instruction_from_bytes!(InitializeArgs);
 impl_instruction_from_bytes!(OpenArgs);
@@ -104,6 +121,8 @@ impl_instruction_from_bytes!(MineArgs);
 impl_instruction_from_bytes!(ClaimArgs);
 impl_instruction_from_bytes!(StakeArgs);
 impl_instruction_from_bytes!(UpgradeArgs);
+impl_instruction_from_bytes!(EquipArgs);
+impl_instruction_from_bytes!(UnequipArgs);
 
 /// Builds an auth instruction.
 pub fn auth(proof: Pubkey) -> Instruction {
@@ -295,6 +314,78 @@ pub fn open_wood(signer: Pubkey, miner: Pubkey, payer: Pubkey) -> Instruction {
         data: [
             CoalInstruction::OpenWood.to_vec(),
             OpenArgs { bump: proof_pda.1 }.to_bytes().to_vec(),
+        ]
+        .concat(),
+    }
+}
+
+
+/// Builds an equip instruction
+pub fn equip(
+    signer: Pubkey,
+    miner: Pubkey,
+    payer: Pubkey,
+    asset: Pubkey,
+    collection: Pubkey,
+) -> Instruction {
+    let tool_pda = Pubkey::find_program_address(&[COAL_TOOL, signer.as_ref()], &crate::id());
+
+    Instruction {
+        program_id: crate::id(),
+        accounts: vec![
+            AccountMeta::new(signer, true),
+            AccountMeta::new_readonly(miner, false),
+            AccountMeta::new(payer, true),
+            AccountMeta::new(asset, false),
+            AccountMeta::new_readonly(collection, false),
+            AccountMeta::new(tool_pda.0, false),
+            AccountMeta::new_readonly(mpl_core::ID, false),
+            AccountMeta::new_readonly(system_program::ID, false),
+        ],
+        data: [
+            CoalInstruction::Equip.to_vec(),
+            EquipArgs {
+                bump: tool_pda.1,
+            }
+            .to_bytes()
+            .to_vec(),
+        ]
+        .concat(),
+    }
+}
+
+/// Builds an unequip instruction
+pub fn unequip(
+    signer: Pubkey,
+    miner: Pubkey,
+    payer: Pubkey,
+    asset: Pubkey,
+    collection: Pubkey,
+) -> Instruction {
+    let tool_pda = Pubkey::find_program_address(&[COAL_TOOL, signer.as_ref()], &crate::id());
+    let plugin_authority = Pubkey::find_program_address(&[PLUGIN_UPDATE_AUTHORITY], &crate::id());
+    // signer, miner_info, payer_info, asset_info, collection_info, tool_info, plugin_update_authority, mpl_core_program, system_program
+    Instruction {
+        program_id: crate::id(),
+        accounts: vec![
+            AccountMeta::new(signer, true),
+            AccountMeta::new_readonly(miner, false),
+            AccountMeta::new(payer, true),
+            AccountMeta::new(asset, false),
+            AccountMeta::new(collection, false),
+            AccountMeta::new(tool_pda.0, false),
+            AccountMeta::new(plugin_authority.0, false),
+            AccountMeta::new_readonly(mpl_core::ID, false),
+            AccountMeta::new_readonly(system_program::ID, false),
+        ],
+        data: [
+            CoalInstruction::Unequip.to_vec(),
+            UnequipArgs {
+                bump: tool_pda.1,
+                plugin_authority_bump: plugin_authority.1,
+            }
+            .to_bytes()
+            .to_vec(),
         ]
         .concat(),
     }

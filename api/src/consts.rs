@@ -111,8 +111,15 @@ pub const WOOD_MINT: &[u8] = b"wood_mint";
 /// The seed of proof account PDAs.
 pub const COAL_PROOF: &[u8] = b"proof";
 pub const WOOD_PROOF: &[u8] = b"wood_proof";
+
+/// The seed of the tool account PDA.
+pub const COAL_TOOL: &[u8] = b"tool";
+pub const WOOD_TOOL: &[u8] = b"wood_tool";
+
 /// The seed of the treasury account PDA.
 pub const TREASURY: &[u8] = b"treasury";
+
+pub const PLUGIN_UPDATE_AUTHORITY: &[u8] = b"update_authority";
 
 /// Noise for deriving the mint pda
 pub const MINT_NOISE: [u8; 16] = [
@@ -137,6 +144,9 @@ const PROGRAM_ID: [u8; 32] = unsafe { *(&crate::id() as *const Pubkey as *const 
 /// ORE program id 
 pub const ORE_PROGRAM_ID: Pubkey = pubkey!("oreV2ZymfyeXgNgBdqMkumTqqAprVqgBWQfoYkrtKWQ");
 pub const ORE_PROGRAM_ID_BYTES: [u8; 32] = unsafe { *(&ORE_PROGRAM_ID as *const Pubkey as *const [u8; 32]) };
+
+/// Forge program id
+pub const FORGE_PICKAXE_COLLECTION: Pubkey = pubkey!("54Raz7fjrBb8bMfE6xJHdUJE9dFhHtnh13ReHgg6bCF5");
 
 /// The addresses of the bus accounts.
 pub const COAL_BUS_ADDRESSES: [Pubkey; BUS_COUNT] = array_const_fn_init![const_coal_bus_address; 8];
@@ -221,6 +231,8 @@ pub const WOOD_TREASURY_TOKENS_ADDRESS: Pubkey = Pubkey::new_from_array(
     )
     .0,
 );
+
+pub const COAL_TOOL_ADDRESS: Pubkey = Pubkey::new_from_array(ed25519::derive_program_address(&[COAL_TOOL], &PROGRAM_ID).0);
 
 
 /// The address of the CU-optimized Solana noop program.

@@ -3,12 +3,14 @@ mod config;
 mod proof;
 mod proof_v2;
 mod treasury;
+mod tool;
 
 pub use bus::*;
 pub use config::*;
 pub use proof::*;
 pub use proof_v2::*;
 pub use treasury::*;
+pub use tool::*;
 
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
@@ -21,4 +23,5 @@ pub enum AccountDiscriminator {
     Treasury = 103,
     ProofV2 = 104,
     WoodConfig = 106,
+    Tool = 107,
 }

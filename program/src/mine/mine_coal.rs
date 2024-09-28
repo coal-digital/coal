@@ -7,7 +7,7 @@ use coal_api::{
     event::MineEvent,
     instruction::MineArgs,
     loaders::*,
-    state::{Config, Proof, Bus},
+    state::{Config, Proof, Bus, Tool},
 };
 #[allow(deprecated)]
 use solana_program::{
@@ -31,8 +31,8 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
     let args = MineArgs::try_from_bytes(data)?;
 
     // Load accounts.
-    let [signer, bus_info, config_info, proof_info, instructions_sysvar, slot_hashes_sysvar] =
-        accounts
+    let (required_accounts, optional_accounts) = accounts.split_at(6);
+    let [signer, bus_info, config_info, proof_info, instructions_sysvar, slot_hashes_sysvar] = required_accounts
     else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
@@ -105,6 +105,77 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
         .base_reward_rate
         .checked_mul(2u64.checked_pow(normalized_difficulty).unwrap())
         .unwrap();
+
+
+    // Apply tool multiplier.
+    //
+    // Durability is decremented for the amount added.
+    if optional_accounts.len().eq(&1) {
+        let tool_info = &optional_accounts[0];
+        // let mpl_program_info = &optional_accounts[1];
+        load_tool(&tool_info, signer.key, true)?;
+
+        let mut tool_data = tool_info.data.borrow_mut();
+        let tool = Tool::try_from_bytes_mut(&mut tool_data)?;
+        
+        // let attributes_plugin = tool.plugin_list.attributes.unwrap();
+        // println!("attributes_plugin: {:?}", attributes_plugin);
+
+        // let mut tool_multiplier = 0;
+        // let mut tool_durability = 0;
+
+        // if multiplier_attr.is_some() {
+        //     let multiplier = multiplier_attr.unwrap().value.parse::<u32>().unwrap();
+        //     tool_multiplier = multiplier as u64;
+        // }
+
+        // if durability_attr.is_some() {
+        //     let durability = durability_attr.unwrap().value.parse::<u32>().unwrap();
+        //     tool_durability = durability as u64;
+        // }
+
+        let additional_reward = (reward as u128)
+            .checked_mul(tool.multiplier as u128)
+            .unwrap()
+            .checked_div(100)
+            .unwrap() as u64;
+        reward = reward.checked_add(additional_reward.min(tool.durability)).unwrap();
+        
+        // Durability is decremented for the amount added.
+        tool.durability = tool.durability.saturating_sub(additional_reward).max(0);
+
+        // println!("tool_multiplier: {:?}", tool_multiplier);
+        // println!("tool_durability: {:?}", tool_durability);
+        // println!("updated_durability: {:?}", updated_durability);
+
+        // let mut updated_attributes = vec![
+        //     Attribute {
+        //         key: "durability".to_string(),
+        //         value: updated_durability.to_string(),
+        //     },
+        // ];
+
+        // attributes_plugin.attributes.attribute_list.iter().for_each(|attr| {
+        //     if attr.key != "durability" {
+        //         updated_attributes.push(Attribute {
+        //             key: attr.key.clone(),
+        //             value: attr.value.clone(),
+        //         });
+        //     }
+        // });
+
+        // let (_, bump) = Pubkey::find_program_address(&[b"update_authority".as_ref()], &coal_api::id());
+        // let plugin_authority_seeds = &[b"update_authority".as_ref()];
+        // UpdatePluginV1CpiBuilder::new(mpl_core)
+        //     .asset(mint_info)
+        //     .payer(signer)
+        //     .authority(Some(update_authority))
+        //     .plugin(Plugin::Attributes(Attributes {
+        //         attribute_list: updated_attributes
+        //     }))
+        //     .system_program(system_program)
+        //     .invoke_signed(&[plugin_authority_seeds, &[&bump.to_le_bytes()]])?;
+    }
 
     // Apply staking multiplier.
     //

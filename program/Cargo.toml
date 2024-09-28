@@ -21,6 +21,7 @@ default = []
 [dependencies]
 drillx.workspace = true
 mpl-token-metadata.workspace = true
+mpl-core.workspace = true
 coal-api.workspace = true
 coal-utils.workspace = true
 solana-program.workspace = true

@@ -2,10 +2,11 @@ use solana_program::{
     account_info::AccountInfo, msg, program_error::ProgramError, program_pack::Pack, pubkey::Pubkey, system_program, sysvar
 };
 use spl_token::state::Mint;
+use mpl_core::{Asset, types::UpdateAuthority};
 
 use crate::{
     consts::*,
-    state::{Bus, Config, Proof, ProofV2, Treasury, WoodConfig},
+    state::{Bus, Config, Proof, ProofV2, Treasury, Tool, WoodConfig},
     utils::{AccountDeserialize, Discriminator},
 };
 
@@ -671,4 +672,72 @@ pub fn load_any<'a, 'info>(
     }
 
     Ok(())
+}
+
+/// Errors if:
+/// - Data is empty.
+/// - Update authority is not the forge pickaxe collection.
+/// - Attributes plugin is not present.
+/// - Durability attribute is not present.
+/// - Multiplier attribute is not present.
+pub fn load_asset<'a, 'info>(
+    info: &'a AccountInfo<'info>,
+) -> Result<(u64, u64), ProgramError> {
+    if info.owner.ne(&mpl_core::ID) {
+        return Err(ProgramError::InvalidAccountOwner);
+    }
+
+    if info.data_is_empty() {
+        return Err(ProgramError::UninitializedAccount);
+    }
+
+    let asset = Asset::from_bytes(&info.data.borrow()).unwrap();
+
+    match asset.base.update_authority {
+        UpdateAuthority::Collection(address) => {
+            if address.ne(&FORGE_PICKAXE_COLLECTION) {
+                msg!("Invalid collection update authority: {:?} == {:?}", address, FORGE_PICKAXE_COLLECTION);
+                return Err(ProgramError::InvalidAccountData);
+            }
+        }
+        _ => return Err(ProgramError::InvalidAccountData),
+    }
+
+    if asset.plugin_list.attributes.is_none() {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+	let attributes_plugin = asset.plugin_list.attributes.unwrap();
+	let durability_attr = attributes_plugin.attributes.attribute_list.iter().find(|attr| attr.key == "durability");
+	let multiplier_attr = attributes_plugin.attributes.attribute_list.iter().find(|attr| attr.key == "multiplier");
+    
+    Ok((durability_attr.unwrap().value.parse::<u64>().unwrap(), multiplier_attr.unwrap().value.parse::<u64>().unwrap()))
+}
+
+pub fn load_tool<'a, 'info>(
+    info: &'a AccountInfo<'info>,
+    miner: &Pubkey,
+    is_writable: bool,
+) -> Result<(u64, u64), ProgramError> {    
+    if info.owner.ne(&crate::id()) {
+        return Err(ProgramError::InvalidAccountOwner);
+    }
+
+    if info.data_is_empty() {
+        return Err(ProgramError::UninitializedAccount);
+    }
+    
+    let tool_data = info.data.borrow();
+    let tool = Tool::try_from_bytes(&tool_data).unwrap();
+
+    if tool.miner.ne(&miner) {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    if is_writable && !info.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    Ok((tool.durability, tool.multiplier))
+
 }
