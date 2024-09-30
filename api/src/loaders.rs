@@ -696,7 +696,7 @@ pub fn load_asset<'a, 'info>(
     match asset.base.update_authority {
         UpdateAuthority::Collection(address) => {
             if address.ne(&FORGE_PICKAXE_COLLECTION) {
-                msg!("Invalid collection update authority: {:?} == {:?}", address, FORGE_PICKAXE_COLLECTION);
+                msg!("Invalid collection: {:?} == {:?}", address, FORGE_PICKAXE_COLLECTION);
                 return Err(ProgramError::InvalidAccountData);
             }
         }
@@ -710,8 +710,9 @@ pub fn load_asset<'a, 'info>(
 	let attributes_plugin = asset.plugin_list.attributes.unwrap();
 	let durability_attr = attributes_plugin.attributes.attribute_list.iter().find(|attr| attr.key == "durability");
 	let multiplier_attr = attributes_plugin.attributes.attribute_list.iter().find(|attr| attr.key == "multiplier");
-    
-    Ok((durability_attr.unwrap().value.parse::<u64>().unwrap(), multiplier_attr.unwrap().value.parse::<u64>().unwrap()))
+    let durability = durability_attr.unwrap().value.parse::<u64>().unwrap();
+    let multiplier = multiplier_attr.unwrap().value.parse::<u64>().unwrap();
+    Ok((durability, multiplier))
 }
 
 pub fn load_tool<'a, 'info>(

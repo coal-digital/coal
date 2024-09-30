@@ -9,6 +9,7 @@ use coal_api::{
     loaders::*,
     state::{Config, Proof, Bus, Tool},
 };
+use solana_program::msg;
 #[allow(deprecated)]
 use solana_program::{
     account_info::AccountInfo,
@@ -112,69 +113,31 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
     // Durability is decremented for the amount added.
     if optional_accounts.len().eq(&1) {
         let tool_info = &optional_accounts[0];
-        // let mpl_program_info = &optional_accounts[1];
-        load_tool(&tool_info, signer.key, true)?;
 
-        let mut tool_data = tool_info.data.borrow_mut();
-        let tool = Tool::try_from_bytes_mut(&mut tool_data)?;
-        
-        // let attributes_plugin = tool.plugin_list.attributes.unwrap();
-        // println!("attributes_plugin: {:?}", attributes_plugin);
+        if !tool_info.data_is_empty() {
+            load_tool(&tool_info, signer.key, true)?;
+    
+            let mut tool_data = tool_info.data.borrow_mut();
+            let tool = Tool::try_from_bytes_mut(&mut tool_data)?;
 
-        // let mut tool_multiplier = 0;
-        // let mut tool_durability = 0;
+            msg!("Tool durability: {}", tool.durability);
+            msg!("Tool multiplier: {}", tool.multiplier);
 
-        // if multiplier_attr.is_some() {
-        //     let multiplier = multiplier_attr.unwrap().value.parse::<u32>().unwrap();
-        //     tool_multiplier = multiplier as u64;
-        // }
-
-        // if durability_attr.is_some() {
-        //     let durability = durability_attr.unwrap().value.parse::<u32>().unwrap();
-        //     tool_durability = durability as u64;
-        // }
-
-        let additional_reward = (reward as u128)
-            .checked_mul(tool.multiplier as u128)
-            .unwrap()
-            .checked_div(100)
-            .unwrap() as u64;
-        reward = reward.checked_add(additional_reward.min(tool.durability)).unwrap();
-        
-        // Durability is decremented for the amount added.
-        tool.durability = tool.durability.saturating_sub(additional_reward).max(0);
-
-        // println!("tool_multiplier: {:?}", tool_multiplier);
-        // println!("tool_durability: {:?}", tool_durability);
-        // println!("updated_durability: {:?}", updated_durability);
-
-        // let mut updated_attributes = vec![
-        //     Attribute {
-        //         key: "durability".to_string(),
-        //         value: updated_durability.to_string(),
-        //     },
-        // ];
-
-        // attributes_plugin.attributes.attribute_list.iter().for_each(|attr| {
-        //     if attr.key != "durability" {
-        //         updated_attributes.push(Attribute {
-        //             key: attr.key.clone(),
-        //             value: attr.value.clone(),
-        //         });
-        //     }
-        // });
-
-        // let (_, bump) = Pubkey::find_program_address(&[b"update_authority".as_ref()], &coal_api::id());
-        // let plugin_authority_seeds = &[b"update_authority".as_ref()];
-        // UpdatePluginV1CpiBuilder::new(mpl_core)
-        //     .asset(mint_info)
-        //     .payer(signer)
-        //     .authority(Some(update_authority))
-        //     .plugin(Plugin::Attributes(Attributes {
-        //         attribute_list: updated_attributes
-        //     }))
-        //     .system_program(system_program)
-        //     .invoke_signed(&[plugin_authority_seeds, &[&bump.to_le_bytes()]])?;
+            if tool.durability.gt(&0) {
+                let additional_reward = (reward as u128)
+                    .checked_mul(tool.multiplier.min(100) as u128)
+                    .unwrap()
+                    .checked_div(100)
+                    .unwrap() as u64;
+                msg!("Additional reward from tool: {}", additional_reward);
+                reward = reward.checked_add(additional_reward.min(tool.durability)).unwrap();
+                
+                // Durability is decremented for the amount added.
+                tool.durability = tool.durability.saturating_sub(additional_reward).max(0);
+                msg!("Tool durability after: {}", tool.durability);
+            }
+    
+        }
     }
 
     // Apply staking multiplier.
@@ -234,7 +197,7 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
     // Busses are limited to distributing n COAL per epoch. This is also the maximum amount that will be paid out
     // for any given hash.
     // Quick fix to prevent the bus from being drained.
-    let reward_actual = reward.min(bus.rewards).min((ONE_COAL as f64 * 62.5) as u64);
+    let reward_actual = reward.min(bus.rewards);
 
     // Update balances.
     //

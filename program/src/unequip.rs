@@ -42,7 +42,7 @@ pub fn process_unequip_tool<'a, 'info>(accounts: &'a [AccountInfo<'info>], data:
 	let mut updated_attributes = vec![
 		Attribute {
 			key: "durability".to_string(),
-			value: durability.to_string(),
+			value: (2000 as u64).saturating_mul(ONE_COAL).to_string(),
 		},
 	];
 

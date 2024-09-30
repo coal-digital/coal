@@ -40,14 +40,6 @@ pub fn process_equip_tool<'a, 'info>(accounts: &'a [AccountInfo<'info>], data: &
         system_program,
         payer_info,
     )?;
-
-	msg!("signer: {}", signer.key.to_string());
-
-	{
-		let asset = Asset::from_bytes(&asset_info.data.borrow()).unwrap();
-		msg!("asset.owner: {:?}", asset.base.owner);
-		msg!("asset.base.update_authority: {:?}", asset.base.update_authority);
-	}
 	
 	TransferV1CpiBuilder::new(mpl_core)
         .asset(asset_info)
@@ -70,8 +62,6 @@ pub fn process_equip_tool<'a, 'info>(accounts: &'a [AccountInfo<'info>], data: &
 	tool.asset = *asset_info.key;
 	tool.durability = durability;
 	tool.multiplier = multiplier;
-	msg!("tool.durability: {}", tool.durability);
-	msg!("tool.multiplier: {}", tool.multiplier);
 
 	Ok(())
 }

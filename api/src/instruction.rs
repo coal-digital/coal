@@ -225,6 +225,8 @@ pub fn mine_coal(
     solution: Solution,
 ) -> Instruction {
     let proof = Pubkey::find_program_address(&[COAL_PROOF, proof_authority.as_ref()], &crate::id()).0;
+    let tool = Pubkey::find_program_address(&[COAL_TOOL, proof_authority.as_ref()], &crate::id()).0;
+    
     Instruction {
         program_id: crate::id(),
         accounts: vec![
@@ -234,6 +236,7 @@ pub fn mine_coal(
             AccountMeta::new(proof, false),
             AccountMeta::new_readonly(sysvar::instructions::id(), false),
             AccountMeta::new_readonly(sysvar::slot_hashes::id(), false),
+            AccountMeta::new(tool, false),
         ],
         data: [
             CoalInstruction::Mine.to_vec(),
@@ -364,7 +367,7 @@ pub fn unequip(
 ) -> Instruction {
     let tool_pda = Pubkey::find_program_address(&[COAL_TOOL, signer.as_ref()], &crate::id());
     let plugin_authority = Pubkey::find_program_address(&[PLUGIN_UPDATE_AUTHORITY], &crate::id());
-    // signer, miner_info, payer_info, asset_info, collection_info, tool_info, plugin_update_authority, mpl_core_program, system_program
+
     Instruction {
         program_id: crate::id(),
         accounts: vec![

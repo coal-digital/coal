@@ -146,7 +146,7 @@ pub const ORE_PROGRAM_ID: Pubkey = pubkey!("oreV2ZymfyeXgNgBdqMkumTqqAprVqgBWQfo
 pub const ORE_PROGRAM_ID_BYTES: [u8; 32] = unsafe { *(&ORE_PROGRAM_ID as *const Pubkey as *const [u8; 32]) };
 
 /// Forge program id
-pub const FORGE_PICKAXE_COLLECTION: Pubkey = pubkey!("54Raz7fjrBb8bMfE6xJHdUJE9dFhHtnh13ReHgg6bCF5");
+pub const FORGE_PICKAXE_COLLECTION: Pubkey = pubkey!("FULWiC87wVBemZEreuq6rEw65kMDztaz7qtZHVRND9kr");
 
 /// The addresses of the bus accounts.
 pub const COAL_BUS_ADDRESSES: [Pubkey; BUS_COUNT] = array_const_fn_init![const_coal_bus_address; 8];
