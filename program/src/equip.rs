@@ -8,7 +8,7 @@ use mpl_core::instructions::TransferV1CpiBuilder;
 
 use crate::utils::{create_pda, AccountDeserialize, Discriminator};
 
-/// Open creates a new proof account to track a miner's state.
+/// Creates a new tool account and transfers the asset to the tool.
 pub fn process_equip_tool<'a, 'info>(accounts: &'a [AccountInfo<'info>], data: &[u8]) -> ProgramResult {
     // Parse args.
     let args = EquipArgs::try_from_bytes(data)?;
