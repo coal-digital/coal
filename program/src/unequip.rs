@@ -1,11 +1,11 @@
 use coal_api::{consts::*, instruction::UnequipArgs, loaders::*, state::Tool};
 use coal_utils::AccountDeserialize;
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError, system_program
+    account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError, system_program
 };
 use mpl_core::{instructions::{TransferV1CpiBuilder, UpdatePluginV1CpiBuilder}, types::{Attribute, Attributes, Plugin}, Asset};
 
-/// Open creates a new proof account to track a miner's state.
+/// Closes the tool account and updates the durability attribute.
 pub fn process_unequip_tool<'a, 'info>(accounts: &'a [AccountInfo<'info>], data: &[u8]) -> ProgramResult {
     // Parse args.
     let args = UnequipArgs::try_from_bytes(data)?;
