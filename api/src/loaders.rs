@@ -682,7 +682,7 @@ pub fn load_any<'a, 'info>(
 /// - Multiplier attribute is not present.
 pub fn load_asset<'a, 'info>(
     info: &'a AccountInfo<'info>,
-) -> Result<(u64, u64), ProgramError> {
+) -> Result<(f64, u64), ProgramError> {
     if info.owner.ne(&mpl_core::ID) {
         return Err(ProgramError::InvalidAccountOwner);
     }
@@ -710,8 +710,9 @@ pub fn load_asset<'a, 'info>(
 	let attributes_plugin = asset.plugin_list.attributes.unwrap();
 	let durability_attr = attributes_plugin.attributes.attribute_list.iter().find(|attr| attr.key == "durability");
 	let multiplier_attr = attributes_plugin.attributes.attribute_list.iter().find(|attr| attr.key == "multiplier");
-    let durability = durability_attr.unwrap().value.parse::<u64>().unwrap();
+    let durability = durability_attr.unwrap().value.parse::<f64>().unwrap();
     let multiplier = multiplier_attr.unwrap().value.parse::<u64>().unwrap();
+    
     Ok((durability, multiplier))
 }
 
@@ -741,4 +742,12 @@ pub fn load_tool<'a, 'info>(
 
     Ok((tool.durability, tool.multiplier))
 
+}
+
+pub fn amount_u64_to_f64(amount: u64) -> f64 {
+    (amount as f64) / 10f64.powf(TOKEN_DECIMALS as f64)
+}
+
+pub fn amount_f64_to_u64(amount: f64) -> u64 {
+    (amount * 10f64.powf(TOKEN_DECIMALS as f64)) as u64
 }

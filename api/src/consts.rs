@@ -113,8 +113,7 @@ pub const COAL_PROOF: &[u8] = b"proof";
 pub const WOOD_PROOF: &[u8] = b"wood_proof";
 
 /// The seed of the tool account PDA.
-pub const COAL_TOOL: &[u8] = b"tool";
-pub const WOOD_TOOL: &[u8] = b"wood_tool";
+pub const COAL_MAIN_HAND_TOOL: &[u8] = b"coal_main_hand_tool";
 
 /// The seed of the treasury account PDA.
 pub const TREASURY: &[u8] = b"treasury";
@@ -232,7 +231,7 @@ pub const WOOD_TREASURY_TOKENS_ADDRESS: Pubkey = Pubkey::new_from_array(
     .0,
 );
 
-pub const COAL_TOOL_ADDRESS: Pubkey = Pubkey::new_from_array(ed25519::derive_program_address(&[COAL_TOOL], &PROGRAM_ID).0);
+pub const COAL_MAIN_HAND_TOOL_ADDRESS: Pubkey = Pubkey::new_from_array(ed25519::derive_program_address(&[COAL_MAIN_HAND_TOOL], &PROGRAM_ID).0);
 
 
 /// The address of the CU-optimized Solana noop program.

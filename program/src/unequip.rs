@@ -1,4 +1,5 @@
-use coal_api::{consts::*, instruction::UnequipArgs, loaders::*};
+use coal_api::{consts::*, instruction::UnequipArgs, loaders::*, state::Tool};
+use coal_utils::AccountDeserialize;
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError, system_program
 };
@@ -21,7 +22,7 @@ pub fn process_unequip_tool<'a, 'info>(accounts: &'a [AccountInfo<'info>], data:
     load_program(system_program, system_program::id())?;
 
 	
-  	let signer_seeds = &[COAL_TOOL, signer.key.as_ref(), &[args.bump]];
+  	let signer_seeds = &[COAL_MAIN_HAND_TOOL, signer.key.as_ref(), &[args.bump]];
 	
   	TransferV1CpiBuilder::new(mpl_core_program)
 		.asset(asset_info)
@@ -32,19 +33,19 @@ pub fn process_unequip_tool<'a, 'info>(accounts: &'a [AccountInfo<'info>], data:
 		.system_program(Some(system_program))
 		.invoke_signed(&[signer_seeds])?;
 
-	let (durability, _) = load_asset(asset_info)?;
-	msg!("durability: {}", durability);
-
-
-	let asset = Asset::from_bytes(&asset_info.data.borrow()).unwrap();
-	let attributes_plugin = asset.plugin_list.attributes.unwrap();
-
+	// Update durability attribute
+	let tool_data = tool_info.data.borrow();
+	let tool = Tool::try_from_bytes(&tool_data).unwrap();
 	let mut updated_attributes = vec![
 		Attribute {
 			key: "durability".to_string(),
-			value: (2000 as u64).saturating_mul(ONE_COAL).to_string(),
+			value: amount_u64_to_f64(tool.durability).to_string()
 		},
 	];
+
+	// Update other attributes
+	let asset = Asset::from_bytes(&asset_info.data.borrow()).unwrap();
+	let attributes_plugin = asset.plugin_list.attributes.unwrap();
 
 	attributes_plugin.attributes.attribute_list.iter().for_each(|attr| {
 		if attr.key != "durability" {
@@ -56,6 +57,7 @@ pub fn process_unequip_tool<'a, 'info>(accounts: &'a [AccountInfo<'info>], data:
 	});
 
 	let plugin_authority_seeds = &[b"update_authority".as_ref(), &[args.plugin_authority_bump]];
+	// Update attributes CPI
 	UpdatePluginV1CpiBuilder::new(mpl_core_program)
 		.asset(asset_info)
 		.collection(Some(collection_info))
