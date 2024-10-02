@@ -1,7 +1,6 @@
-use coal_api::{consts::*, instruction::UnequipArgs, loaders::*, state::Tool};
-use coal_utils::AccountDeserialize;
+use coal_api::{consts::*, instruction::UnequipArgs, loaders::*};
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError, system_program
+    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError, system_program
 };
 use mpl_core::{instructions::{TransferV1CpiBuilder, UpdatePluginV1CpiBuilder}, types::{Attribute, Attributes, Plugin}, Asset};
 
@@ -17,29 +16,16 @@ pub fn process_unequip_tool<'a, 'info>(accounts: &'a [AccountInfo<'info>], data:
     };
 
 	load_signer(signer)?;
-    load_tool(tool_info, miner_info.key, true)?;
 	load_program(mpl_core_program, mpl_core::ID)?;
     load_program(system_program, system_program::id())?;
-
 	
-  	let signer_seeds = &[COAL_MAIN_HAND_TOOL, signer.key.as_ref(), &[args.bump]];
 	
-  	TransferV1CpiBuilder::new(mpl_core_program)
-		.asset(asset_info)
-		.collection(Some(collection_info))
-		.payer(payer_info)
-		.authority(Some(tool_info))
-		.new_owner(signer)
-		.system_program(Some(system_program))
-		.invoke_signed(&[signer_seeds])?;
-
 	// Update durability attribute
-	let tool_data = tool_info.data.borrow();
-	let tool = Tool::try_from_bytes(&tool_data).unwrap();
+    let (durability, _) = load_tool(tool_info, miner_info.key, true)?;
 	let mut updated_attributes = vec![
 		Attribute {
 			key: "durability".to_string(),
-			value: amount_u64_to_f64(tool.durability).to_string()
+			value: amount_u64_to_f64(durability).to_string()
 		},
 	];
 
@@ -68,13 +54,27 @@ pub fn process_unequip_tool<'a, 'info>(accounts: &'a [AccountInfo<'info>], data:
 		}))
 		.system_program(system_program)
 		.invoke_signed(&[plugin_authority_seeds])?;
-	
+	msg!("Updated attributes");
     // Realloc data to zero.
     tool_info.realloc(0, true)?;
-
+	msg!("Reallocated tool");
     // Send remaining lamports to signer.
     **signer.lamports.borrow_mut() += tool_info.lamports();
     **tool_info.lamports.borrow_mut() = 0;
+	msg!("Sent remaining lamports to signer");
+
+
+	// Transfer tool to signer
+	let signer_seeds = &[COAL_MAIN_HAND_TOOL, signer.key.as_ref(), &[args.bump]];
+	
+	TransferV1CpiBuilder::new(mpl_core_program)
+	  .asset(asset_info)
+	  .collection(Some(collection_info))
+	  .payer(payer_info)
+	  .authority(Some(tool_info))
+	  .new_owner(signer)
+	  .system_program(Some(system_program))
+	  .invoke_signed(&[signer_seeds])?;
 
 	Ok(())
 }

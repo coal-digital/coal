@@ -129,8 +129,10 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
                     .unwrap()
                     .checked_div(100)
                     .unwrap() as u64;
-                msg!("Additional reward from tool: {}", additional_reward);
+                msg!("Current reward: {}", reward / ONE_COAL);
+                msg!("Additional reward from tool: {}", additional_reward / ONE_COAL);
                 reward = reward.checked_add(additional_reward.min(tool.durability)).unwrap();
+                msg!("New reward: {}", reward / ONE_COAL);
                 
                 // Durability is decremented for the amount added.
                 tool.durability = tool.durability.saturating_sub(additional_reward).max(0);

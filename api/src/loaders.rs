@@ -751,3 +751,4 @@ pub fn amount_u64_to_f64(amount: u64) -> f64 {
 pub fn amount_f64_to_u64(amount: f64) -> u64 {
     (amount * 10f64.powf(TOKEN_DECIMALS as f64)) as u64
 }
+
