@@ -9,7 +9,6 @@ use coal_api::{
     loaders::*,
     state::{Config, Proof, Bus, Tool},
 };
-use solana_program::msg;
 #[allow(deprecated)]
 use solana_program::{
     account_info::AccountInfo,
@@ -120,23 +119,16 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
             let mut tool_data = tool_info.data.borrow_mut();
             let tool = Tool::try_from_bytes_mut(&mut tool_data)?;
 
-            msg!("Tool durability: {}", tool.durability);
-            msg!("Tool multiplier: {}", tool.multiplier);
-
             if tool.durability.gt(&0) {
                 let additional_reward = (reward as u128)
                     .checked_mul(tool.multiplier.min(100) as u128)
                     .unwrap()
                     .checked_div(100)
                     .unwrap() as u64;
-                msg!("Current reward: {}", reward / ONE_COAL);
-                msg!("Additional reward from tool: {}", additional_reward / ONE_COAL);
                 reward = reward.checked_add(additional_reward.min(tool.durability)).unwrap();
-                msg!("New reward: {}", reward / ONE_COAL);
                 
                 // Durability is decremented for the amount added.
                 tool.durability = tool.durability.saturating_sub(additional_reward).max(0);
-                msg!("Tool durability after: {}", tool.durability);
             }
     
         }
