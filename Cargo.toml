@@ -3,7 +3,7 @@ resolver = "2"
 members = ["api", "program", "utils"]
 
 [workspace.package]
-version = "2.4.0"
+version = "2.5.1"
 edition = "2021"
 license = "Apache-2.0"
 homepage = "https://coal.supply"
@@ -17,6 +17,7 @@ array-const-fn-init = "0.1.1"
 bytemuck = "1.14.3"
 const-crypto = "0.1.0"
 drillx = { version = "2.1.0", features = ["solana"] }
+mpl-core = "0.8.0"
 mpl-token-metadata = "4.1.2"
 num_enum = "0.7.2"
 coal-api = { path = "api", version = "2.1.0" }

@@ -8,6 +8,8 @@ mod open_wood;
 mod reset;
 mod stake;
 mod update;
+mod equip;
+mod unequip;
 
 use claim::*;
 use close::*;
@@ -19,7 +21,8 @@ use open_wood::*;
 use reset::*;
 use stake::*;
 use update::*;
-
+use equip::*;
+use unequip::*;
 use coal_api::instruction::*;
 use solana_program::{
     self, account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
@@ -56,6 +59,8 @@ pub fn process_instruction(
         CoalInstruction::Update => process_update(accounts, data)?,
         CoalInstruction::InitCoal => process_init_coal(accounts, data)?,
         CoalInstruction::InitWood => process_init_wood(accounts, data)?,
+        CoalInstruction::Equip => process_equip_tool(accounts, data)?,
+        CoalInstruction::Unequip => process_unequip_tool(accounts, data)?,
     }
 
     Ok(())

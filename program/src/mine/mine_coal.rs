@@ -7,7 +7,7 @@ use coal_api::{
     event::MineEvent,
     instruction::MineArgs,
     loaders::*,
-    state::{Config, Proof, Bus},
+    state::{Config, Proof, Bus, Tool},
 };
 #[allow(deprecated)]
 use solana_program::{
@@ -31,8 +31,8 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
     let args = MineArgs::try_from_bytes(data)?;
 
     // Load accounts.
-    let [signer, bus_info, config_info, proof_info, instructions_sysvar, slot_hashes_sysvar] =
-        accounts
+    let (required_accounts, optional_accounts) = accounts.split_at(6);
+    let [signer, bus_info, config_info, proof_info, instructions_sysvar, slot_hashes_sysvar] = required_accounts
     else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
@@ -106,6 +106,34 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
         .checked_mul(2u64.checked_pow(normalized_difficulty).unwrap())
         .unwrap();
 
+
+    // Apply tool multiplier.
+    //
+    // Durability is decremented for the amount added.
+    if optional_accounts.len().eq(&1) {
+        let tool_info = &optional_accounts[0];
+
+        if !tool_info.data_is_empty() {
+            load_tool(&tool_info, signer.key, true)?;
+    
+            let mut tool_data = tool_info.data.borrow_mut();
+            let tool = Tool::try_from_bytes_mut(&mut tool_data)?;
+
+            if tool.durability.gt(&0) {
+                let additional_reward = (reward as u128)
+                    .checked_mul(tool.multiplier.min(100) as u128)
+                    .unwrap()
+                    .checked_div(100)
+                    .unwrap() as u64;
+                reward = reward.checked_add(additional_reward.min(tool.durability)).unwrap();
+                
+                // Durability is decremented for the amount added.
+                tool.durability = tool.durability.saturating_sub(additional_reward).max(0);
+            }
+    
+        }
+    }
+
     // Apply staking multiplier.
     //
     // If user has greater than or equal to the max stake on the network, they receive 2x multiplier.
@@ -163,7 +191,7 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
     // Busses are limited to distributing n COAL per epoch. This is also the maximum amount that will be paid out
     // for any given hash.
     // Quick fix to prevent the bus from being drained.
-    let reward_actual = reward.min(bus.rewards).min((ONE_COAL as f64 * 62.5) as u64);
+    let reward_actual = reward.min(bus.rewards);
 
     // Update balances.
     //
