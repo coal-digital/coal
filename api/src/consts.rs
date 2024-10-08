@@ -118,7 +118,11 @@ pub const COAL_MAIN_HAND_TOOL: &[u8] = b"coal_main_hand_tool";
 /// The seed of the treasury account PDA.
 pub const TREASURY: &[u8] = b"treasury";
 
+/// The seed of the plugin update authority PDA.
 pub const PLUGIN_UPDATE_AUTHORITY: &[u8] = b"update_authority";
+
+/// The seed of the reprocessor PDA.
+pub const REPROCESSOR: &[u8] = b"reprocessor";
 
 /// Noise for deriving the mint pda
 pub const MINT_NOISE: [u8; 16] = [

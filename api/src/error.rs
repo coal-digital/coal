@@ -21,6 +21,8 @@ pub enum CoalError {
     MaxSupply = 6,
     #[error("The proof does not match the expected account")]
     AuthFailed = 7,
+    #[error("Slot too early")]
+    SlotTooEarly = 8,
 }
 
 impl From<CoalError> for ProgramError {

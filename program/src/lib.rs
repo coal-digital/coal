@@ -10,7 +10,7 @@ mod stake;
 mod update;
 mod equip;
 mod unequip;
-
+mod reprocess;
 use claim::*;
 use close::*;
 use init_coal::*;
@@ -23,6 +23,7 @@ use stake::*;
 use update::*;
 use equip::*;
 use unequip::*;
+use reprocess::*;
 use coal_api::instruction::*;
 use solana_program::{
     self, account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
@@ -61,6 +62,8 @@ pub fn process_instruction(
         CoalInstruction::InitWood => process_init_wood(accounts, data)?,
         CoalInstruction::Equip => process_equip_tool(accounts, data)?,
         CoalInstruction::Unequip => process_unequip_tool(accounts, data)?,
+        CoalInstruction::InitReprocess => process_initialize_reprocess(accounts, data)?,
+        CoalInstruction::FinalizeReprocess => process_finalize_reprocess(accounts, data)?,
     }
 
     Ok(())

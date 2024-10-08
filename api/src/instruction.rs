@@ -27,6 +27,8 @@ pub enum CoalInstruction {
     OpenWood = 7,
     Equip = 8,
     Unequip = 9,
+    InitReprocess = 10,
+    FinalizeReprocess = 11,
     // Admin
     InitCoal = 100,
     InitWood = 101,
@@ -96,6 +98,12 @@ pub struct ClaimArgs {
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
+pub struct ReprocessArgs {
+    pub reprocessor_bump: u8,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Pod, Zeroable)]
 pub struct StakeArgs {
     pub amount: [u8; 8],
 }
@@ -114,6 +122,7 @@ impl_to_bytes!(StakeArgs);
 impl_to_bytes!(UpgradeArgs);
 impl_to_bytes!(EquipArgs);
 impl_to_bytes!(UnequipArgs);
+impl_to_bytes!(ReprocessArgs);
 
 impl_instruction_from_bytes!(InitializeArgs);
 impl_instruction_from_bytes!(OpenArgs);
@@ -123,6 +132,7 @@ impl_instruction_from_bytes!(StakeArgs);
 impl_instruction_from_bytes!(UpgradeArgs);
 impl_instruction_from_bytes!(EquipArgs);
 impl_instruction_from_bytes!(UnequipArgs);
+impl_instruction_from_bytes!(ReprocessArgs);
 
 /// Builds an auth instruction.
 pub fn auth(proof: Pubkey) -> Instruction {
@@ -664,6 +674,53 @@ pub fn init_wood(signer: Pubkey) -> Instruction {
                 metadata_bump: metadata_pda.1,
                 mint_bump: mint_pda.1,
                 treasury_bump: treasury_pda.1,
+            }
+            .to_bytes()
+            .to_vec(),
+        ]
+        .concat(),
+    }
+}
+
+pub fn init_reprocess(signer: Pubkey) -> Instruction {
+    let (reprocessor, reprocessor_bump) = Pubkey::find_program_address(&[REPROCESSOR, signer.as_ref()], &crate::id());
+
+    Instruction {
+        program_id: crate::id(),
+        accounts: vec![
+            AccountMeta::new(signer, true),
+            AccountMeta::new(reprocessor, false),
+            AccountMeta::new_readonly(sysvar::slot_hashes::id(), false),
+            AccountMeta::new_readonly(system_program::id(), false),
+        ],
+        data: [
+            CoalInstruction::InitReprocess.to_vec(),
+            ReprocessArgs {
+                reprocessor_bump,
+            }
+            .to_bytes()
+            .to_vec(),
+        ]
+        .concat(),
+    }
+}
+
+pub fn finalize_reprocess(signer: Pubkey) -> Instruction {
+    let (proof, _proof_bump) = Pubkey::find_program_address(&[COAL_PROOF, signer.as_ref()], &crate::id());
+    let (reprocessor, reprocessor_bump) = Pubkey::find_program_address(&[REPROCESSOR, signer.as_ref()], &crate::id());
+    // signer, reprocessor_info, proof_info, slot_hashes_sysvar
+    Instruction {
+        program_id: crate::id(),
+        accounts: vec![
+            AccountMeta::new(signer, true),
+            AccountMeta::new(reprocessor, false),
+            AccountMeta::new(proof, false),
+            AccountMeta::new_readonly(sysvar::slot_hashes::id(), false),
+        ],
+        data: [
+            CoalInstruction::FinalizeReprocess.to_vec(),
+            ReprocessArgs {
+                reprocessor_bump,
             }
             .to_bytes()
             .to_vec(),
