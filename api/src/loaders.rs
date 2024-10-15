@@ -165,7 +165,7 @@ pub fn load_any_wood_bus<'a, 'info>(
 }
 
 /// Errors if:
-/// - Owner is not Ore program.
+/// - Owner is not Coal program.
 /// - Address does not match the expected address.
 /// - Data is empty.
 /// - Data cannot deserialize into a coal config account.
@@ -198,7 +198,7 @@ pub fn load_coal_config<'a, 'info>(
 }
 
 /// Errors if:
-/// - Owner is not Ore program.
+/// - Owner is not Coal program.
 /// - Address does not match the expected address.
 /// - Data is empty.
 /// - Data cannot deserialize into a config account.
@@ -231,7 +231,7 @@ pub fn load_wood_config<'a, 'info>(
 }
 
 /// Errors if:
-/// - Owner is not Ore program.
+/// - Owner is not Coal program.
 /// - Data is empty.
 /// - Data cannot deserialize into a proof account.
 /// - Proof authority does not match the expected address.
@@ -264,7 +264,7 @@ pub fn load_coal_proof<'a, 'info>(
 }
 
 /// Errors if:
-/// - Owner is not Ore program.
+/// - Owner is not Coal program.
 /// - Data is empty.
 /// - Data cannot deserialize into a proof account.
 /// - Proof authority does not match the expected address.
@@ -297,7 +297,7 @@ pub fn load_reprocessor<'a, 'info>(
 }
 
 /// Errors if:
-/// - Owner is not Ore program.
+/// - Owner is not Coal program.
 /// - Data is empty.
 /// - Data cannot deserialize into a proof account.
 /// - Proof authority does not match the expected address.
@@ -335,7 +335,7 @@ pub fn load_proof_v2<'a, 'info>(
 }
 
 /// Errors if:
-/// - Owner is not Ore program.
+/// - Owner is not Coal program.
 /// - Data is empty.
 /// - Data cannot deserialize into a proof account.
 /// - Proof miner does not match the expected address.
@@ -368,7 +368,7 @@ pub fn load_coal_proof_with_miner<'a, 'info>(
 }
 
 /// Errors if:
-/// - Owner is not Ore program.
+/// - Owner is not Coal program.
 /// - Data is empty.
 /// - Data cannot deserialize into a proof account.
 /// - Proof miner does not match the expected address.
@@ -406,7 +406,7 @@ pub fn load_proof_v2_with_miner<'a, 'info>(
 }
 
 /// Errors if:
-/// - Owner is not Ore program.
+/// - Owner is not Coal program.
 /// - Data is empty.
 /// - Data cannot deserialize into a proof account.
 /// - Expected to be writable, but is not.
@@ -462,7 +462,7 @@ pub fn load_any_proof_v2<'a, 'info>(
 }
 
 /// Errors if:
-/// - Owner is not Ore program.
+/// - Owner is not Coal program.
 /// - Address does not match the expected address.
 /// - Data is empty.
 /// - Data cannot deserialize into a treasury account.

@@ -61,18 +61,17 @@ pub fn process_initialize_reprocess(accounts: &[AccountInfo], data: &[u8]) -> Pr
     
 
     // Transfer fee of 0.005 SOL to treasury
-    // This is to prevent spamming
-    // Treasury funds will later be moved to the LP
-    // let fee: u64 = LAMPORTS_PER_SOL / 200;
-    // let transfer_ix = transfer(
-    //     signer.key,
-    //     treasury_info.key,
-    //     fee,
-    // );
-    // invoke(
-    //     &transfer_ix,
-    //     &[signer.clone(), treasury_info.clone(), system_program.clone()],
-    // )?;
+    // This is to discourage abuse
+    let fee: u64 = LAMPORTS_PER_SOL / 200;
+    let transfer_ix = transfer(
+        signer.key,
+        treasury_info.key,
+        fee,
+    );
+    invoke(
+        &transfer_ix,
+        &[signer.clone(), treasury_info.clone(), system_program.clone()],
+    )?;
 
     Ok(())
 }
