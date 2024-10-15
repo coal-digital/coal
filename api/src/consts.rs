@@ -107,6 +107,7 @@ pub const METADATA: &[u8] = b"metadata";
 /// The seed of the mint account PDA.
 pub const COAL_MINT: &[u8] = b"mint";
 pub const WOOD_MINT: &[u8] = b"wood_mint";
+pub const CHROMIUM_MINT: &[u8] = b"chromium_mint";
 
 /// The seed of proof account PDAs.
 pub const COAL_PROOF: &[u8] = b"proof";
@@ -132,14 +133,17 @@ pub const MINT_NOISE: [u8; 16] = [
 /// The name for token metadata.
 pub const COAL_METADATA_NAME: &str = "coal";
 pub const WOOD_METADATA_NAME: &str = "wood";
+pub const CHROMIUM_METADATA_NAME: &str = "chromium";
 
 /// The ticker symbol for token metadata.
 pub const COAL_METADATA_SYMBOL: &str = "COAL";
 pub const WOOD_METADATA_SYMBOL: &str = "WOOD";
+pub const CHROMIUM_METADATA_SYMBOL: &str = "CHROMIUM";
 
 /// The uri for token metdata.
 pub const COAL_METADATA_URI: &str = "https://coal.digital/metadata.json";
 pub const WOOD_METADATA_URI: &str = "https://coal.digital/metadata.wood.json";
+pub const CHROMIUM_METADATA_URI: &str = "https://coal.digital/metadata.chromium.json";
 
 /// Program id for const pda derivations
 const PROGRAM_ID: [u8; 32] = unsafe { *(&crate::id() as *const Pubkey as *const [u8; 32]) };
@@ -194,13 +198,17 @@ pub const WOOD_METADATA_ADDRESS: Pubkey = Pubkey::new_from_array(
     .0,
 );
 
-/// The address of the mint account.
+/// The address of the COAL mint account.
 pub const COAL_MINT_ADDRESS: Pubkey =
     Pubkey::new_from_array(ed25519::derive_program_address(&[COAL_MINT, &MINT_NOISE], &PROGRAM_ID).0);
 
-/// The address of the mint account.
+/// The address of the WOOD mint account.
 pub const WOOD_MINT_ADDRESS: Pubkey =
     Pubkey::new_from_array(ed25519::derive_program_address(&[WOOD_MINT, &MINT_NOISE], &PROGRAM_ID).0);
+
+/// The address of the CHROMIUM mint account.
+pub const CHROMIUM_MINT_ADDRESS: Pubkey =
+    Pubkey::new_from_array(ed25519::derive_program_address(&[CHROMIUM_MINT, &MINT_NOISE], &PROGRAM_ID).0);
 
 /// The address of the treasury account.
 pub const TREASURY_ADDRESS: Pubkey =

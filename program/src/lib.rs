@@ -1,7 +1,8 @@
 mod claim;
 mod close;
-mod init_coal;
-mod init_wood;
+// mod init_coal;
+// mod init_wood;
+mod init_chromium;
 mod mine;
 mod open_coal;
 mod open_wood;
@@ -13,8 +14,9 @@ mod unequip;
 mod reprocess;
 use claim::*;
 use close::*;
-use init_coal::*;
-use init_wood::*;
+// use init_coal::*;
+// use init_wood::*;
+use init_chromium::*;
 use mine::*;
 use open_coal::*;
 use open_wood::*;
@@ -23,7 +25,8 @@ use stake::*;
 use update::*;
 use equip::*;
 use unequip::*;
-use reprocess::*;
+use reprocess::finalize_reprocess::*;
+use reprocess::init_reprocess::*;
 use coal_api::instruction::*;
 use solana_program::{
     self, account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
@@ -58,8 +61,9 @@ pub fn process_instruction(
         CoalInstruction::Reset => process_reset(accounts, data)?,
         CoalInstruction::Stake => process_stake(accounts, data)?,
         CoalInstruction::Update => process_update(accounts, data)?,
-        CoalInstruction::InitCoal => process_init_coal(accounts, data)?,
-        CoalInstruction::InitWood => process_init_wood(accounts, data)?,
+        // CoalInstruction::InitCoal => process_init_coal(accounts, data)?,
+        // CoalInstruction::InitWood => process_init_wood(accounts, data)?,
+        CoalInstruction::InitChromium => process_init_chromium(accounts, data)?,
         CoalInstruction::Equip => process_equip_tool(accounts, data)?,
         CoalInstruction::Unequip => process_unequip_tool(accounts, data)?,
         CoalInstruction::InitReprocess => process_initialize_reprocess(accounts, data)?,

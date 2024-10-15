@@ -6,7 +6,7 @@ use mpl_core::{Asset, types::UpdateAuthority};
 
 use crate::{
     consts::*,
-    state::{Bus, Config, Proof, ProofV2, Treasury, Tool, WoodConfig},
+    state::{Bus, Config, Proof, ProofV2, Reprocessor, Tool, Treasury, WoodConfig},
     utils::{AccountDeserialize, Discriminator},
 };
 
@@ -253,6 +253,39 @@ pub fn load_coal_proof<'a, 'info>(
     let proof = Proof::try_from_bytes(&proof_data)?;
 
     if proof.authority.ne(&authority) {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    if is_writable && !info.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    Ok(())
+}
+
+/// Errors if:
+/// - Owner is not Ore program.
+/// - Data is empty.
+/// - Data cannot deserialize into a proof account.
+/// - Proof authority does not match the expected address.
+/// - Expected to be writable, but is not.
+pub fn load_reprocessor<'a, 'info>(
+    info: &'a AccountInfo<'info>,
+    authority: &Pubkey,
+    is_writable: bool,
+) -> Result<(), ProgramError> {
+    if info.owner.ne(&crate::id()) {
+        return Err(ProgramError::InvalidAccountOwner);
+    }
+
+    if info.data_is_empty() {
+        return Err(ProgramError::UninitializedAccount);
+    }
+
+    let data = info.data.borrow();
+    let reprocessor = Reprocessor::try_from_bytes(&data)?;
+
+    if reprocessor.authority.ne(&authority) {
         return Err(ProgramError::InvalidAccountData);
     }
 
