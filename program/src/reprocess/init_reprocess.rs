@@ -53,7 +53,7 @@ pub fn process_initialize_reprocess(accounts: &[AccountInfo], data: &[u8]) -> Pr
     reprocessor.authority = *signer.key;
     
     let slot = Clock::get()?.slot;
-    reprocessor.slot = slot + 20;
+    reprocessor.slot = slot + REPROCESS_TARGET_SLOT;
     reprocessor.hash = hashv(&[
         &slot_hashes_sysvar.data.borrow()[0..size_of::<SlotHash>()],
     ])
@@ -62,15 +62,18 @@ pub fn process_initialize_reprocess(accounts: &[AccountInfo], data: &[u8]) -> Pr
 
     // Transfer fee of 0.005 SOL to treasury
     // This is to discourage abuse
-    let fee: u64 = LAMPORTS_PER_SOL / 200;
     let transfer_ix = transfer(
         signer.key,
         treasury_info.key,
-        fee,
+        REPROCESS_FEE,
     );
     invoke(
         &transfer_ix,
-        &[signer.clone(), treasury_info.clone(), system_program.clone()],
+        &[
+            signer.clone(),
+            treasury_info.clone(),
+            system_program.clone()
+        ],
     )?;
 
     Ok(())

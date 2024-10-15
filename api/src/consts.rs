@@ -1,6 +1,10 @@
 use array_const_fn_init::array_const_fn_init;
 use const_crypto::ed25519;
-use solana_program::{pubkey, pubkey::Pubkey};
+use solana_program::{
+    pubkey, 
+    pubkey::Pubkey,
+    native_token::LAMPORTS_PER_SOL
+};
 
 /// The authority allowed to initialize the program.
 pub const INITIALIZER_ADDRESS: Pubkey = pubkey!("FJka1yJHn1SWux2X1o8VqHC8uaAWGv6CbNQvPWLJQufq");
@@ -23,6 +27,11 @@ pub const BASE_WOOD_REWARD_RATE_MAX_THRESHOLD: u64 = 2u64.pow(8) * WOOD_EXTRACTI
 
 /// The spam/liveness tolerance in seconds.
 pub const TOLERANCE: i64 = 5;
+
+pub const REPROCESS_TARGET_SLOT: u64 = 20;
+pub const REPROCESS_SLOT_BUFFER: u64 = 6;
+pub const REPROCESS_MAX_MULTIPLIER: u64 = 100;
+pub const REPROCESS_FEE: u64 = LAMPORTS_PER_SOL / 200;
 
 /// The liveness tolerance for WOOD in seconds.
 pub const WOOD_LIVENESS_TOLERANCE: i64 = 65;

@@ -37,7 +37,7 @@ pub fn process_finalize_reprocess(accounts: &[AccountInfo], _data: &[u8]) -> Pro
     let mut reprocessor_data = reprocessor_info.data.borrow_mut();
     let reprocessor = Reprocessor::try_from_bytes_mut(&mut reprocessor_data)?;
     
-    // Target slot is 100 slots ahead of the starting slot
+    // Target slot is 20 slots ahead of the starting slot
     let target_slot = reprocessor.slot;
     let current_slot = Clock::get()?.slot;
     
@@ -70,13 +70,12 @@ pub fn process_finalize_reprocess(accounts: &[AccountInfo], _data: &[u8]) -> Pro
     .0;
 
     // Derive a number between 1 and 100 from the final hash
-    let pseudo_random_number = derive_number_from_hash(&final_hash, 1, 100);
+    let pseudo_random_number = derive_number_from_hash(&final_hash, 1, REPROCESS_MAX_MULTIPLIER);
     msg!("Derived number: {}", pseudo_random_number);
     let mut reward = calculate_reward(total_hashes, total_rewards, pseudo_random_number);
 
     // Calculate the liveness penalty
-    let s_buffer = 5;
-    let s_tolerance = target_slot.saturating_add(s_buffer);
+    let s_tolerance = target_slot.saturating_add(REPROCESS_SLOT_BUFFER);
     
     msg!("Current slot: {}", current_slot);
     msg!("Target slot: {}", target_slot);
