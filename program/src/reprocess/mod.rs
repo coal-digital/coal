@@ -1,2 +1,2 @@
-pub mod finalize_reprocess;
+pub mod reprocess;
 pub mod init_reprocess;

@@ -759,13 +759,12 @@ pub fn init_reprocess(signer: Pubkey) -> Instruction {
     }
 }
 
-pub fn finalize_reprocess(signer: Pubkey) -> Instruction {
+pub fn reprocess(signer: Pubkey) -> Instruction {
     let (proof, _proof_bump) = Pubkey::find_program_address(&[COAL_PROOF, signer.as_ref()], &crate::id());
     let (reprocessor, reprocessor_bump) = Pubkey::find_program_address(&[REPROCESSOR, signer.as_ref()], &crate::id());
     let (bus, _bus_bump) = Pubkey::find_program_address(&[COAL_BUS, &[0]], &crate::id());
     let tokens = spl_associated_token_account::get_associated_token_address(&signer, &CHROMIUM_MINT_ADDRESS);
     
-    // signer, reprocessor_info, proof_info, bus_info, mint_info, tokens_info, treasury_info, token_program, slot_hashes_sysvar
     Instruction {
         program_id: crate::id(),
         accounts: vec![

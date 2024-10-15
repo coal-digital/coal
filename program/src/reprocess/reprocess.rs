@@ -19,7 +19,7 @@ use solana_program::{
 
 use crate::utils::AccountDeserialize;
 
-pub fn process_finalize_reprocess(accounts: &[AccountInfo], _data: &[u8]) -> ProgramResult {
+pub fn process_reprocess(accounts: &[AccountInfo], _data: &[u8]) -> ProgramResult {
     // Load accounts.
     let [signer, reprocessor_info, proof_info, bus_info, mint_info, tokens_info, treasury_info, token_program, slot_hashes_sysvar] =
         accounts

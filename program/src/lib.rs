@@ -25,7 +25,7 @@ use stake::*;
 use update::*;
 use equip::*;
 use unequip::*;
-use reprocess::finalize_reprocess::*;
+use reprocess::reprocess::*;
 use reprocess::init_reprocess::*;
 use coal_api::instruction::*;
 use solana_program::{
@@ -67,7 +67,7 @@ pub fn process_instruction(
         CoalInstruction::Equip => process_equip_tool(accounts, data)?,
         CoalInstruction::Unequip => process_unequip_tool(accounts, data)?,
         CoalInstruction::InitReprocess => process_initialize_reprocess(accounts, data)?,
-        CoalInstruction::FinalizeReprocess => process_finalize_reprocess(accounts, data)?,
+        CoalInstruction::FinalizeReprocess => process_reprocess(accounts, data)?,
     }
 
     Ok(())
