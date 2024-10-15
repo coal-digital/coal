@@ -6,7 +6,6 @@ use solana_program::{
     clock::Clock,
     entrypoint::ProgramResult,
     keccak::hashv,
-    native_token::LAMPORTS_PER_SOL,
     program::invoke,
     program_error::ProgramError,
     slot_hashes::SlotHash, 
