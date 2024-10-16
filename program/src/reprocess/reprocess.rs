@@ -132,7 +132,7 @@ fn derive_number_from_hash(hash: &[u8; 32], min: u64, max: u64) -> u64 {
 
 fn calculate_reward(total_hashes: u64, total_rewards: u64, pseudo_random_number: u64) -> u64 {    
     // Calculate a hash factor (gives more weight to number of hashes)
-    let scaling_factor = BASE_COAL_REWARD_RATE_MIN_THRESHOLD;
+    let scaling_factor = 16u64;
     let hash_factor = scaling_factor.saturating_mul(total_hashes);
     
     // Calculate a reward factor (gives some weight to total rewards)
