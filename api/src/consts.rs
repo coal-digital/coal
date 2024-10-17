@@ -1,6 +1,10 @@
 use array_const_fn_init::array_const_fn_init;
 use const_crypto::ed25519;
-use solana_program::{pubkey, pubkey::Pubkey};
+use solana_program::{
+    pubkey, 
+    pubkey::Pubkey,
+    native_token::LAMPORTS_PER_SOL
+};
 
 /// The authority allowed to initialize the program.
 pub const INITIALIZER_ADDRESS: Pubkey = pubkey!("FJka1yJHn1SWux2X1o8VqHC8uaAWGv6CbNQvPWLJQufq");
@@ -23,6 +27,11 @@ pub const BASE_WOOD_REWARD_RATE_MAX_THRESHOLD: u64 = 2u64.pow(8) * WOOD_EXTRACTI
 
 /// The spam/liveness tolerance in seconds.
 pub const TOLERANCE: i64 = 5;
+
+pub const REPROCESS_TARGET_SLOT: u64 = 20;
+pub const REPROCESS_SLOT_BUFFER: u64 = 6;
+pub const REPROCESS_MAX_MULTIPLIER: u64 = 100;
+pub const REPROCESS_FEE: u64 = LAMPORTS_PER_SOL / 200;
 
 /// The liveness tolerance for WOOD in seconds.
 pub const WOOD_LIVENESS_TOLERANCE: i64 = 65;
@@ -107,6 +116,7 @@ pub const METADATA: &[u8] = b"metadata";
 /// The seed of the mint account PDA.
 pub const COAL_MINT: &[u8] = b"mint";
 pub const WOOD_MINT: &[u8] = b"wood_mint";
+pub const CHROMIUM_MINT: &[u8] = b"chromium_mint";
 
 /// The seed of proof account PDAs.
 pub const COAL_PROOF: &[u8] = b"proof";
@@ -118,7 +128,11 @@ pub const COAL_MAIN_HAND_TOOL: &[u8] = b"coal_main_hand_tool";
 /// The seed of the treasury account PDA.
 pub const TREASURY: &[u8] = b"treasury";
 
+/// The seed of the plugin update authority PDA.
 pub const PLUGIN_UPDATE_AUTHORITY: &[u8] = b"update_authority";
+
+/// The seed of the reprocessor PDA.
+pub const REPROCESSOR: &[u8] = b"reprocessor";
 
 /// Noise for deriving the mint pda
 pub const MINT_NOISE: [u8; 16] = [
@@ -128,14 +142,17 @@ pub const MINT_NOISE: [u8; 16] = [
 /// The name for token metadata.
 pub const COAL_METADATA_NAME: &str = "coal";
 pub const WOOD_METADATA_NAME: &str = "wood";
+pub const CHROMIUM_METADATA_NAME: &str = "chromium";
 
 /// The ticker symbol for token metadata.
 pub const COAL_METADATA_SYMBOL: &str = "COAL";
 pub const WOOD_METADATA_SYMBOL: &str = "WOOD";
+pub const CHROMIUM_METADATA_SYMBOL: &str = "CHROMIUM";
 
 /// The uri for token metdata.
 pub const COAL_METADATA_URI: &str = "https://coal.digital/metadata.json";
 pub const WOOD_METADATA_URI: &str = "https://coal.digital/metadata.wood.json";
+pub const CHROMIUM_METADATA_URI: &str = "https://coal.digital/metadata.chromium.json";
 
 /// Program id for const pda derivations
 const PROGRAM_ID: [u8; 32] = unsafe { *(&crate::id() as *const Pubkey as *const [u8; 32]) };
@@ -190,13 +207,17 @@ pub const WOOD_METADATA_ADDRESS: Pubkey = Pubkey::new_from_array(
     .0,
 );
 
-/// The address of the mint account.
+/// The address of the COAL mint account.
 pub const COAL_MINT_ADDRESS: Pubkey =
     Pubkey::new_from_array(ed25519::derive_program_address(&[COAL_MINT, &MINT_NOISE], &PROGRAM_ID).0);
 
-/// The address of the mint account.
+/// The address of the WOOD mint account.
 pub const WOOD_MINT_ADDRESS: Pubkey =
     Pubkey::new_from_array(ed25519::derive_program_address(&[WOOD_MINT, &MINT_NOISE], &PROGRAM_ID).0);
+
+/// The address of the CHROMIUM mint account.
+pub const CHROMIUM_MINT_ADDRESS: Pubkey =
+    Pubkey::new_from_array(ed25519::derive_program_address(&[CHROMIUM_MINT, &MINT_NOISE], &PROGRAM_ID).0);
 
 /// The address of the treasury account.
 pub const TREASURY_ADDRESS: Pubkey =
