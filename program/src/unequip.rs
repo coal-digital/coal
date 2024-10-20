@@ -1,6 +1,6 @@
 use coal_api::{consts::*, instruction::UnequipArgs, loaders::*};
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError, system_program
+    account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError, system_program
 };
 use mpl_core::{instructions::{TransferV1CpiBuilder, UpdatePluginV1CpiBuilder}, types::{Attribute, Attributes, Plugin}, Asset};
 

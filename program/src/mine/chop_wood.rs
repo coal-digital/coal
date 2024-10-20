@@ -166,7 +166,7 @@ pub fn process_chop_wood(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
         let tool_info = &optional_accounts[0];
 
         if !tool_info.data_is_empty() {
-            load_tool(&tool_info, signer.key, true)?;
+            load_wood_tool(&tool_info, signer.key, true)?;
     
             let mut tool_data = tool_info.data.borrow_mut();
             let tool = WoodTool::try_from_bytes_mut(&mut tool_data)?;
