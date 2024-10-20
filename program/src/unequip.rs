@@ -1,6 +1,6 @@
 use coal_api::{consts::*, instruction::UnequipArgs, loaders::*};
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError, system_program
+    account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError, system_program
 };
 use mpl_core::{instructions::{TransferV1CpiBuilder, UpdatePluginV1CpiBuilder}, types::{Attribute, Attributes, Plugin}, Asset};
 
@@ -18,10 +18,9 @@ pub fn process_unequip_tool<'a, 'info>(accounts: &'a [AccountInfo<'info>], data:
 	load_signer(signer)?;
 	load_program(mpl_core_program, mpl_core::ID)?;
     load_program(system_program, system_program::id())?;
-	
-	
+
 	// Update durability attribute
-    let (durability, _) = load_tool(tool_info, miner_info.key, true)?;
+    let durability = load_any_tool_with_asset(tool_info, miner_info.key, asset_info.key, true)?;
 	let mut updated_attributes = vec![
 		Attribute {
 			key: "durability".to_string(),
@@ -32,6 +31,7 @@ pub fn process_unequip_tool<'a, 'info>(accounts: &'a [AccountInfo<'info>], data:
 	// Update other attributes
 	let asset = Asset::from_bytes(&asset_info.data.borrow()).unwrap();
 	let attributes_plugin = asset.plugin_list.attributes.unwrap();
+	let resource = attributes_plugin.attributes.attribute_list.iter().find(|attr| attr.key == "resource").unwrap().value.clone();
 
 	attributes_plugin.attributes.attribute_list.iter().for_each(|attr| {
 		if attr.key != "durability" {
@@ -54,18 +54,21 @@ pub fn process_unequip_tool<'a, 'info>(accounts: &'a [AccountInfo<'info>], data:
 		}))
 		.system_program(system_program)
 		.invoke_signed(&[plugin_authority_seeds])?;
-	msg!("Updated attributes");
+
     // Realloc data to zero.
     tool_info.realloc(0, true)?;
-	msg!("Reallocated tool");
     // Send remaining lamports to signer.
     **signer.lamports.borrow_mut() += tool_info.lamports();
     **tool_info.lamports.borrow_mut() = 0;
-	msg!("Sent remaining lamports to signer");
 
 
 	// Transfer tool to signer
-	let signer_seeds = &[COAL_MAIN_HAND_TOOL, signer.key.as_ref(), &[args.bump]];
+	let seed = match resource.as_str() {
+		"coal" => COAL_MAIN_HAND_TOOL,
+		"wood" => WOOD_MAIN_HAND_TOOL,
+		_ => return Err(ProgramError::InvalidAccountData),
+	};
+	let signer_seeds = &[seed, signer.key.as_ref(), &[args.bump]];
 	
 	TransferV1CpiBuilder::new(mpl_core_program)
 	  .asset(asset_info)

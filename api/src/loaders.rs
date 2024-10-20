@@ -6,7 +6,7 @@ use mpl_core::{Asset, types::UpdateAuthority};
 
 use crate::{
     consts::*,
-    state::{Bus, Config, Proof, ProofV2, Reprocessor, Tool, Treasury, WoodConfig},
+    state::{Bus, Config, Proof, ProofV2, Reprocessor, Tool, Treasury, WoodConfig, WoodTool},
     utils::{AccountDeserialize, Discriminator},
 };
 
@@ -715,7 +715,7 @@ pub fn load_any<'a, 'info>(
 /// - Multiplier attribute is not present.
 pub fn load_asset<'a, 'info>(
     info: &'a AccountInfo<'info>,
-) -> Result<(f64, u64), ProgramError> {
+) -> Result<(f64, u64, String), ProgramError> {
     if info.owner.ne(&mpl_core::ID) {
         return Err(ProgramError::InvalidAccountOwner);
     }
@@ -743,10 +743,12 @@ pub fn load_asset<'a, 'info>(
 	let attributes_plugin = asset.plugin_list.attributes.unwrap();
 	let durability_attr = attributes_plugin.attributes.attribute_list.iter().find(|attr| attr.key == "durability");
 	let multiplier_attr = attributes_plugin.attributes.attribute_list.iter().find(|attr| attr.key == "multiplier");
+    let resource_attr = attributes_plugin.attributes.attribute_list.iter().find(|attr| attr.key == "resource");
     let durability = durability_attr.unwrap().value.parse::<f64>().unwrap();
     let multiplier = multiplier_attr.unwrap().value.parse::<u64>().unwrap();
+    let resource = resource_attr.unwrap().value.clone();
     
-    Ok((durability, multiplier))
+    Ok((durability, multiplier, resource))
 }
 
 pub fn load_tool<'a, 'info>(
@@ -774,7 +776,86 @@ pub fn load_tool<'a, 'info>(
     }
 
     Ok((tool.durability, tool.multiplier))
+}
 
+pub fn load_wood_tool<'a, 'info>(
+    info: &'a AccountInfo<'info>,
+    miner: &Pubkey,
+    is_writable: bool,
+) -> Result<(u64, u64), ProgramError> {    
+    if info.owner.ne(&crate::id()) {
+        return Err(ProgramError::InvalidAccountOwner);
+    }
+
+    if info.data_is_empty() {
+        return Err(ProgramError::UninitializedAccount);
+    }
+    
+    let tool_data = info.data.borrow();
+    let tool = WoodTool::try_from_bytes(&tool_data).unwrap();
+
+    if tool.miner.ne(&miner) {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    if is_writable && !info.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    Ok((tool.durability, tool.multiplier))
+}
+
+pub fn load_any_tool_with_asset<'a, 'info>(
+    info: &'a AccountInfo<'info>,
+    miner: &Pubkey,
+    asset: &Pubkey,
+    is_writable: bool,
+) -> Result<u64, ProgramError> {
+    if info.owner.ne(&crate::id()) {
+        return Err(ProgramError::InvalidAccountOwner);
+    }
+
+    if info.data_is_empty() {
+        return Err(ProgramError::UninitializedAccount);
+    }
+
+    if is_writable && !info.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+    
+    let tool_data = info.data.borrow();
+
+    match tool_data[0] {
+        d if d == Tool::discriminator() as u8 => {
+            let tool = Tool::try_from_bytes(&tool_data).unwrap();
+
+            if tool.miner.ne(&miner) {
+                return Err(ProgramError::InvalidAccountData);
+            }
+
+            if tool.asset.ne(&asset) {
+                return Err(ProgramError::InvalidAccountData);
+            }
+
+            return Ok(tool.durability);
+
+        },
+        d if d == WoodTool::discriminator() as u8 => {
+            let tool = WoodTool::try_from_bytes(&tool_data).unwrap();
+
+            if tool.miner.ne(&miner) {
+                return Err(ProgramError::InvalidAccountData);
+            }
+
+            if tool.asset.ne(&asset) {
+                return Err(ProgramError::InvalidAccountData);
+            }
+
+            return Ok(tool.durability);
+
+        },
+        _ => Err(ProgramError::InvalidAccountData),
+    }
 }
 
 pub fn amount_u64_to_f64(amount: u64) -> f64 {
@@ -784,4 +865,3 @@ pub fn amount_u64_to_f64(amount: u64) -> f64 {
 pub fn amount_f64_to_u64(amount: f64) -> u64 {
     (amount * 10f64.powf(TOKEN_DECIMALS as f64)) as u64
 }
-

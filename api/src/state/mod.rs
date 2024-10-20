@@ -26,4 +26,5 @@ pub enum AccountDiscriminator {
     WoodConfig = 106,
     Tool = 107,
     Reprocessor = 108,
+    WoodTool = 109,
 }

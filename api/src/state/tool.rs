@@ -5,15 +5,13 @@ use crate::utils::{impl_account_from_bytes, impl_to_bytes, Discriminator};
 
 use super::AccountDiscriminator;
 
-/// Proof accounts track a miner's current hash, claimable rewards, and lifetime stats.
-/// Every miner is allowed one proof account which is required by the program to mine or claim rewards.
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq, Pod, Zeroable)]
 pub struct Tool {
     /// The tool authority.
     pub authority: Pubkey,
 
-    /// Miner can is authorized to use the tool.
+    /// Miner authorized to use the tool.
     pub miner: Pubkey,
 
     /// The equipped tool.
@@ -32,5 +30,32 @@ impl Discriminator for Tool {
     }
 }
 
+#[repr(C)]
+#[derive(Clone, Copy, Debug, PartialEq, Pod, Zeroable)]
+pub struct WoodTool {
+    /// The tool authority.
+    pub authority: Pubkey,
+
+    /// Miner authorized to use the tool.
+    pub miner: Pubkey,
+
+    /// The equipped tool.
+    pub asset: Pubkey,
+
+    /// The remaining durability of the tool.
+    pub durability: u64,
+
+    /// The multiplier of the tool.
+    pub multiplier: u64,
+}
+
+impl Discriminator for WoodTool {
+    fn discriminator() -> u8 {
+        AccountDiscriminator::WoodTool.into()
+    }
+}
+
 impl_to_bytes!(Tool);
 impl_account_from_bytes!(Tool);
+impl_to_bytes!(WoodTool);
+impl_account_from_bytes!(WoodTool);
