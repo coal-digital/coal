@@ -133,7 +133,6 @@ fn handle_equip_wood_tool<'info>(
         bump,
         &coal_api::id(),
     )?;
-    msg!("load_uninitialized_pda");
     // Initialize tool account.
     create_pda(
         tool_info,
@@ -143,7 +142,6 @@ fn handle_equip_wood_tool<'info>(
         system_program,
         payer_info,
     )?;
-    msg!("create_pda");
     let mut tool_data = tool_info.data.borrow_mut();
     tool_data[0] = WoodTool::discriminator() as u8;
     let tool = WoodTool::try_from_bytes_mut(&mut tool_data)?;
