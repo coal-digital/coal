@@ -351,8 +351,9 @@ pub fn equip(
     payer: Pubkey,
     asset: Pubkey,
     collection: Pubkey,
+    seed: &[u8],
 ) -> Instruction {
-    let tool_pda = Pubkey::find_program_address(&[COAL_MAIN_HAND_TOOL, signer.as_ref()], &crate::id());
+    let tool_pda = Pubkey::find_program_address(&[seed, signer.as_ref()], &crate::id());
 
     Instruction {
         program_id: crate::id(),
@@ -385,8 +386,9 @@ pub fn unequip(
     payer: Pubkey,
     asset: Pubkey,
     collection: Pubkey,
+    seed: &[u8],
 ) -> Instruction {
-    let tool_pda = Pubkey::find_program_address(&[COAL_MAIN_HAND_TOOL, signer.as_ref()], &crate::id());
+    let tool_pda = Pubkey::find_program_address(&[seed, signer.as_ref()], &crate::id());
     let plugin_authority = Pubkey::find_program_address(&[PLUGIN_UPDATE_AUTHORITY], &crate::id());
 
     Instruction {

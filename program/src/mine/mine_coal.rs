@@ -107,33 +107,6 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
         .unwrap();
 
 
-    // Apply tool multiplier.
-    //
-    // Durability is decremented for the amount added.
-    if optional_accounts.len().eq(&1) {
-        let tool_info = &optional_accounts[0];
-
-        if !tool_info.data_is_empty() {
-            load_tool(&tool_info, signer.key, true)?;
-    
-            let mut tool_data = tool_info.data.borrow_mut();
-            let tool = Tool::try_from_bytes_mut(&mut tool_data)?;
-
-            if tool.durability.gt(&0) {
-                let additional_reward = (reward as u128)
-                    .checked_mul(tool.multiplier.min(100) as u128)
-                    .unwrap()
-                    .checked_div(100)
-                    .unwrap() as u64;
-                reward = reward.checked_add(additional_reward.min(tool.durability)).unwrap();
-                
-                // Durability is decremented for the amount added.
-                tool.durability = tool.durability.saturating_sub(additional_reward).max(0);
-            }
-    
-        }
-    }
-
     // Apply staking multiplier.
     //
     // If user has greater than or equal to the max stake on the network, they receive 2x multiplier.
@@ -183,6 +156,33 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
                 .saturating_mul(remainder_secs)
                 .saturating_div(ONE_MINUTE as u64);
             reward = reward.saturating_sub(penalty);
+        }
+    }
+
+    // Apply tool multiplier.
+    //
+    // Durability is decremented for the amount added.
+    if optional_accounts.len().eq(&1) {
+        let tool_info = &optional_accounts[0];
+
+        if !tool_info.data_is_empty() {
+            load_tool(&tool_info, signer.key, true)?;
+    
+            let mut tool_data = tool_info.data.borrow_mut();
+            let tool = Tool::try_from_bytes_mut(&mut tool_data)?;
+
+            if tool.durability.gt(&0) {
+                let additional_reward = (reward as u128)
+                    .checked_mul(tool.multiplier.min(100) as u128)
+                    .unwrap()
+                    .checked_div(100)
+                    .unwrap() as u64;
+                reward = reward.checked_add(additional_reward.min(tool.durability)).unwrap();
+                
+                // Durability is decremented for the amount added.
+                tool.durability = tool.durability.saturating_sub(additional_reward).max(0);
+            }
+    
         }
     }
 

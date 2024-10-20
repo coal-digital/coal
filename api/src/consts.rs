@@ -124,6 +124,7 @@ pub const WOOD_PROOF: &[u8] = b"wood_proof";
 
 /// The seed of the tool account PDA.
 pub const COAL_MAIN_HAND_TOOL: &[u8] = b"coal_main_hand_tool";
+pub const WOOD_MAIN_HAND_TOOL: &[u8] = b"wood_main_hand_tool";
 
 /// The seed of the treasury account PDA.
 pub const TREASURY: &[u8] = b"treasury";

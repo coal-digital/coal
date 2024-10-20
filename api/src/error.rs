@@ -23,6 +23,8 @@ pub enum CoalError {
     AuthFailed = 7,
     #[error("Slot too early")]
     SlotTooEarly = 8,
+    #[error("The resource is invalid")]
+    InvalidResource = 9,
 }
 
 impl From<CoalError> for ProgramError {
