@@ -2,13 +2,9 @@ use std::mem::size_of;
 
 use drillx::Solution;
 use coal_api::{
-    consts::*,
-    error::CoalError,
-    event::MineEvent,
-    instruction::MineArgs,
-    loaders::*,
-    state::{Config, Proof, Bus, Tool},
+    consts::*, error::CoalError, event::MineEvent, guild_loaders::{load_guild_config, load_guild_with_member, load_member}, instruction::MineArgs, loaders::*, state::{Bus, Config, Proof, Tool}
 };
+use solana_program::msg;
 #[allow(deprecated)]
 use solana_program::{
     account_info::AccountInfo,
@@ -159,13 +155,16 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
         }
     }
 
-    // Apply tool multiplier.
-    //
-    // Durability is decremented for the amount added.
-    if optional_accounts.len().eq(&1) {
-        let tool_info = &optional_accounts[0];
+    // Apply multipliers.
+    if optional_accounts.len().ge(&1) {
+        let mut shift: usize = 0;
 
-        if !tool_info.data_is_empty() {
+        if !optional_accounts[0].data_is_empty() && is_tool(&optional_accounts[0]) {
+            shift = 1;
+            let tool_info = &optional_accounts[0];
+            // Apply tool multiplier.
+            //
+            // Durability is decremented for the amount added.
             load_tool(&tool_info, signer.key, true)?;
     
             let mut tool_data = tool_info.data.borrow_mut();
@@ -182,7 +181,24 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
                 // Durability is decremented for the amount added.
                 tool.durability = tool.durability.saturating_sub(additional_reward).max(0);
             }
-    
+        }
+
+        if optional_accounts.len().ge(&(shift + 2)) {
+            let guild_config_info =  &optional_accounts[shift];
+            let guild_member_info = &optional_accounts[shift + 1];
+            
+            let total_stake = load_guild_config(guild_config_info)?;
+
+            if optional_accounts.len().eq(&(shift + 3)) {
+                let guild_info = &optional_accounts[shift + 2];
+                let guild_stake = load_guild_with_member(guild_info, guild_member_info, signer.key)?;
+                let stake_reward = calculate_stake_multiplier(reward, guild_stake, total_stake);
+                reward = reward.checked_add(stake_reward).unwrap();
+            } else {
+                let member_stake = load_member(guild_member_info, signer.key)?;
+                let stake_reward = calculate_stake_multiplier(reward, member_stake, total_stake);
+                reward = reward.checked_add(stake_reward).unwrap();
+            }
         }
     }
 
@@ -284,4 +300,14 @@ fn parse_coal_auth_address(data: &[u8]) -> Result<Option<Pubkey>, SanitizeError>
     }
 
     Ok(None)
+}
+
+fn calculate_stake_multiplier(base_reward: u64, stake: u64, total_stake: u64) -> u64 {
+    (base_reward as u128)
+        .checked_mul(32 as u128)
+        .unwrap()
+        .checked_mul(stake as u128)
+        .unwrap()
+        .checked_div(total_stake as u128)
+        .unwrap() as u64
 }

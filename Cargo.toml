@@ -27,7 +27,9 @@ spl-token = { version = "^4", features = ["no-entrypoint"] }
 spl-associated-token-account = { version = "^2.3", features = [ "no-entrypoint" ] } 
 static_assertions = "1.1.0"
 thiserror = "1.0.57"
+steel = { features = ["spl"], version = "1.2" }
 
 # [patch.crates-io]
 # drillx = { path = "../drillx/drillx" }
+coal-guilds-api = { path = "../guilds/api", version = "1.0.0" }
 

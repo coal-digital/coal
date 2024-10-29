@@ -70,9 +70,8 @@ pub fn process_reprocess(accounts: &[AccountInfo], _data: &[u8]) -> ProgramResul
     .0;
 
     // Derive a number between 1 and 100 from the final hash
-    let pseudo_random_number = derive_number_from_hash(&final_hash, 1, REPROCESS_MAX_MULTIPLIER);
-    msg!("Derived number: {}", pseudo_random_number);
-    let mut reward = calculate_reward(total_hashes, total_rewards, pseudo_random_number);
+    let mut pseudo_random_number = derive_number_from_hash(&final_hash, 1, REPROCESS_MAX_MULTIPLIER);
+    let reward = calculate_reward(total_hashes, total_rewards);
 
     // Calculate the liveness penalty
     let s_tolerance = target_slot.saturating_add(REPROCESS_SLOT_BUFFER);
@@ -85,10 +84,12 @@ pub fn process_reprocess(accounts: &[AccountInfo], _data: &[u8]) -> ProgramResul
         let halvings = current_slot.saturating_sub(s_tolerance) as u64;
         msg!("Halvings: {}", halvings);
         if halvings.gt(&0) {
-            reward = reward.saturating_div(2u64.saturating_pow(halvings as u32));
+            pseudo_random_number = pseudo_random_number.saturating_div(2u64.saturating_pow(halvings as u32)).max(1);
         }
     }
 
+    let actual_reward = apply_randomness(reward, pseudo_random_number);
+    msg!("Actual reward: {}", actual_reward);
     // Mint chromium rewards
     solana_program::program::invoke_signed(
         &spl_token::instruction::mint_to(
@@ -97,7 +98,7 @@ pub fn process_reprocess(accounts: &[AccountInfo], _data: &[u8]) -> ProgramResul
             tokens_info.key,
             treasury_info.key,
             &[treasury_info.key],
-            reward,
+            actual_reward,
         )?,
         &[
             token_program.clone(),
@@ -130,7 +131,7 @@ fn derive_number_from_hash(hash: &[u8; 32], min: u64, max: u64) -> u64 {
     min + (acc % (max - min + 1))
 }
 
-fn calculate_reward(total_hashes: u64, total_rewards: u64, pseudo_random_number: u64) -> u64 {    
+fn calculate_reward(total_hashes: u64, total_rewards: u64) -> u64 {
     // Calculate a hash factor (gives more weight to number of hashes)
     let scaling_factor = 16u64;
     let hash_factor = scaling_factor.saturating_mul(total_hashes);
@@ -141,15 +142,15 @@ fn calculate_reward(total_hashes: u64, total_rewards: u64, pseudo_random_number:
     // Combine factors
     let combined_factor = hash_factor.saturating_mul(reward_factor);
 
-    let min_reward = combined_factor;
-    let max_reward = min_reward.saturating_mul(100);
-
     // Logs
     msg!("Total hashes: {}", total_hashes);
     msg!("Total rewards: {}", total_rewards);
-    msg!("Min reward: {}", min_reward);
-    msg!("Max reward: {}", max_reward);
+    msg!("Base reward: {}", combined_factor);
     
-    // Apply randomness
-    combined_factor.saturating_mul(pseudo_random_number)
+    combined_factor
+}
+
+fn apply_randomness(base_reward: u64, pseudo_random_number: u64) -> u64 {
+    msg!("Derived number: {}", pseudo_random_number);
+    base_reward.saturating_mul(pseudo_random_number)
 }

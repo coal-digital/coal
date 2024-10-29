@@ -258,6 +258,9 @@ pub fn mine_coal(
             AccountMeta::new_readonly(sysvar::instructions::id(), false),
             AccountMeta::new_readonly(sysvar::slot_hashes::id(), false),
             AccountMeta::new(tool, false),
+            AccountMeta::new_readonly(system_program::ID, false),
+            AccountMeta::new_readonly(system_program::ID, false),
+            AccountMeta::new_readonly(system_program::ID, false),
         ],
         data: [
             CoalInstruction::Mine.to_vec(),
