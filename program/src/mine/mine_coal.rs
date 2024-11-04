@@ -176,6 +176,7 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
                     .unwrap()
                     .checked_div(100)
                     .unwrap() as u64;
+                msg!("tool additional_reward: {}", additional_reward.saturating_div(ONE_COAL));
                 reward = reward.checked_add(additional_reward.min(tool.durability)).unwrap();
                 
                 // Durability is decremented for the amount added.
@@ -187,16 +188,18 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
             let guild_config_info =  &optional_accounts[shift];
             let guild_member_info = &optional_accounts[shift + 1];
             
-            let total_stake = load_guild_config(guild_config_info)?;
+            let (total_stake, total_multiplier) = load_guild_config(guild_config_info)?;
 
             if optional_accounts.len().eq(&(shift + 3)) {
                 let guild_info = &optional_accounts[shift + 2];
                 let guild_stake = load_guild_with_member(guild_info, guild_member_info, signer.key)?;
-                let stake_reward = calculate_stake_multiplier(reward, guild_stake, total_stake);
+                let stake_reward = calculate_stake_multiplier(reward, guild_stake, total_stake, total_multiplier);
+                msg!("guild stake_reward: {}", stake_reward.saturating_div(ONE_COAL));
                 reward = reward.checked_add(stake_reward).unwrap();
             } else {
                 let member_stake = load_member(guild_member_info, signer.key)?;
-                let stake_reward = calculate_stake_multiplier(reward, member_stake, total_stake);
+                let stake_reward = calculate_stake_multiplier(reward, member_stake, total_stake, total_multiplier);
+                msg!("member stake_reward: {}", stake_reward.saturating_div(ONE_COAL));
                 reward = reward.checked_add(stake_reward).unwrap();
             }
         }
@@ -302,9 +305,9 @@ fn parse_coal_auth_address(data: &[u8]) -> Result<Option<Pubkey>, SanitizeError>
     Ok(None)
 }
 
-fn calculate_stake_multiplier(base_reward: u64, stake: u64, total_stake: u64) -> u64 {
+fn calculate_stake_multiplier(base_reward: u64, stake: u64, total_stake: u64, multiplier: u64) -> u64 {
     (base_reward as u128)
-        .checked_mul(32 as u128)
+        .checked_mul(multiplier as u128)
         .unwrap()
         .checked_mul(stake as u128)
         .unwrap()

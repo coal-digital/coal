@@ -537,7 +537,7 @@ dependencies = [
 
 [[package]]
 name = "coal-api"
-version = "2.5.4"
+version = "2.6.0"
 dependencies = [
  "array-const-fn-init",
  "bytemuck",
@@ -559,6 +559,8 @@ dependencies = [
 [[package]]
 name = "coal-guilds-api"
 version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "48857417be74314847a379bbb61135920c31e0ff0fcb09c5acaa48cde64ec354"
 dependencies = [
  "array-const-fn-init",
  "bytemuck",
@@ -574,7 +576,7 @@ dependencies = [
 
 [[package]]
 name = "coal-program"
-version = "2.5.4"
+version = "2.6.0"
 dependencies = [
  "coal-api",
  "coal-guilds-api",
@@ -591,7 +593,7 @@ dependencies = [
 
 [[package]]
 name = "coal-utils"
-version = "2.5.4"
+version = "2.6.0"
 dependencies = [
  "bytemuck",
  "solana-program",

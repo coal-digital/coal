@@ -243,25 +243,39 @@ pub fn mine_coal(
     signer: Pubkey,
     proof_authority: Pubkey,
     bus: Pubkey,
+    tool: Option<Pubkey>,
+    member: Option<Pubkey>,
+    guild: Option<Pubkey>,
     solution: Solution,
 ) -> Instruction {
     let proof = Pubkey::find_program_address(&[COAL_PROOF, proof_authority.as_ref()], &crate::id()).0;
-    let tool = Pubkey::find_program_address(&[COAL_MAIN_HAND_TOOL, proof_authority.as_ref()], &crate::id()).0;
-    
+
+    let mut accounts = vec![
+        AccountMeta::new(signer, true),
+        AccountMeta::new(bus, false),
+        AccountMeta::new_readonly(COAL_CONFIG_ADDRESS, false),
+        AccountMeta::new(proof, false),
+        AccountMeta::new_readonly(sysvar::instructions::id(), false),
+        AccountMeta::new_readonly(sysvar::slot_hashes::id(), false),
+    ];
+
+    if let Some(tool) = tool {
+        accounts.push(AccountMeta::new(tool, false));
+    }
+
+    if let Some(member) = member {
+        let guild_config = coal_guilds_api::state::config_pda().0;
+        accounts.push(AccountMeta::new_readonly(guild_config, false));
+        accounts.push(AccountMeta::new_readonly(member, false));
+    }
+
+    if let Some(guild) = guild {
+        accounts.push(AccountMeta::new_readonly(guild, false));
+    }
+
     Instruction {
         program_id: crate::id(),
-        accounts: vec![
-            AccountMeta::new(signer, true),
-            AccountMeta::new(bus, false),
-            AccountMeta::new_readonly(COAL_CONFIG_ADDRESS, false),
-            AccountMeta::new(proof, false),
-            AccountMeta::new_readonly(sysvar::instructions::id(), false),
-            AccountMeta::new_readonly(sysvar::slot_hashes::id(), false),
-            AccountMeta::new(tool, false),
-            AccountMeta::new_readonly(system_program::ID, false),
-            AccountMeta::new_readonly(system_program::ID, false),
-            AccountMeta::new_readonly(system_program::ID, false),
-        ],
+        accounts,
         data: [
             CoalInstruction::Mine.to_vec(),
             MineArgs {
@@ -559,147 +573,6 @@ pub fn update_wood(signer: Pubkey, miner: Pubkey) -> Instruction {
         data: CoalInstruction::Update.to_vec(),
     }
 }
-
-/// Builds an initialize instruction.
-// pub fn init_coal(signer: Pubkey) -> Instruction {
-//     let bus_pdas = [
-//         Pubkey::find_program_address(&[COAL_BUS, &[0]], &crate::id()),
-//         Pubkey::find_program_address(&[COAL_BUS, &[1]], &crate::id()),
-//         Pubkey::find_program_address(&[COAL_BUS, &[2]], &crate::id()),
-//         Pubkey::find_program_address(&[COAL_BUS, &[3]], &crate::id()),
-//         Pubkey::find_program_address(&[COAL_BUS, &[4]], &crate::id()),
-//         Pubkey::find_program_address(&[COAL_BUS, &[5]], &crate::id()),
-//         Pubkey::find_program_address(&[COAL_BUS, &[6]], &crate::id()),
-//         Pubkey::find_program_address(&[COAL_BUS, &[7]], &crate::id()),
-//     ];
-//     let config_pda = Pubkey::find_program_address(&[COAL_CONFIG], &crate::id());
-//     let mint_pda = Pubkey::find_program_address(&[COAL_MINT, MINT_NOISE.as_slice()], &crate::id());
-//     let treasury_pda = Pubkey::find_program_address(&[TREASURY], &crate::id());
-//     let treasury_tokens =
-//         spl_associated_token_account::get_associated_token_address(&treasury_pda.0, &mint_pda.0);
-//     let metadata_pda = Pubkey::find_program_address(
-//         &[
-//             METADATA,
-//             mpl_token_metadata::ID.as_ref(),
-//             mint_pda.0.as_ref(),
-//         ],
-//         &mpl_token_metadata::ID,
-//     );
-//     Instruction {
-//         program_id: crate::id(),
-//         accounts: vec![
-//             AccountMeta::new(signer, true),
-//             AccountMeta::new(bus_pdas[0].0, false),
-//             AccountMeta::new(bus_pdas[1].0, false),
-//             AccountMeta::new(bus_pdas[2].0, false),
-//             AccountMeta::new(bus_pdas[3].0, false),
-//             AccountMeta::new(bus_pdas[4].0, false),
-//             AccountMeta::new(bus_pdas[5].0, false),
-//             AccountMeta::new(bus_pdas[6].0, false),
-//             AccountMeta::new(bus_pdas[7].0, false),
-//             AccountMeta::new(config_pda.0, false),
-//             AccountMeta::new(metadata_pda.0, false),
-//             AccountMeta::new(mint_pda.0, false),
-//             AccountMeta::new(treasury_pda.0, false),
-//             AccountMeta::new(treasury_tokens, false),
-//             AccountMeta::new_readonly(system_program::id(), false),
-//             AccountMeta::new_readonly(spl_token::id(), false),
-//             AccountMeta::new_readonly(spl_associated_token_account::id(), false),
-//             AccountMeta::new_readonly(mpl_token_metadata::ID, false),
-//             AccountMeta::new_readonly(sysvar::rent::id(), false),
-//         ],
-//         data: [
-//             CoalInstruction::InitCoal.to_vec(),
-//             InitializeArgs {
-//                 bus_0_bump: bus_pdas[0].1,
-//                 bus_1_bump: bus_pdas[1].1,
-//                 bus_2_bump: bus_pdas[2].1,
-//                 bus_3_bump: bus_pdas[3].1,
-//                 bus_4_bump: bus_pdas[4].1,
-//                 bus_5_bump: bus_pdas[5].1,
-//                 bus_6_bump: bus_pdas[6].1,
-//                 bus_7_bump: bus_pdas[7].1,
-//                 config_bump: config_pda.1,
-//                 metadata_bump: metadata_pda.1,
-//                 mint_bump: mint_pda.1,
-//                 treasury_bump: treasury_pda.1,
-//             }
-//             .to_bytes()
-//             .to_vec(),
-//         ]
-//         .concat(),
-//     }
-// }
-
-// pub fn init_wood(signer: Pubkey) -> Instruction {
-//     let bus_pdas = [
-//         Pubkey::find_program_address(&[WOOD_BUS, &[0]], &crate::id()),
-//         Pubkey::find_program_address(&[WOOD_BUS, &[1]], &crate::id()),
-//         Pubkey::find_program_address(&[WOOD_BUS, &[2]], &crate::id()),
-//         Pubkey::find_program_address(&[WOOD_BUS, &[3]], &crate::id()),
-//         Pubkey::find_program_address(&[WOOD_BUS, &[4]], &crate::id()),
-//         Pubkey::find_program_address(&[WOOD_BUS, &[5]], &crate::id()),
-//         Pubkey::find_program_address(&[WOOD_BUS, &[6]], &crate::id()),
-//         Pubkey::find_program_address(&[WOOD_BUS, &[7]], &crate::id()),
-//     ];
-//     let config_pda = Pubkey::find_program_address(&[WOOD_CONFIG], &crate::id());
-//     let mint_pda = Pubkey::find_program_address(&[WOOD_MINT, MINT_NOISE.as_slice()], &crate::id());
-//     let treasury_pda = Pubkey::find_program_address(&[TREASURY], &crate::id());
-//     let treasury_tokens =
-//         spl_associated_token_account::get_associated_token_address(&treasury_pda.0, &mint_pda.0);
-//     let metadata_pda = Pubkey::find_program_address(
-//         &[
-//             METADATA,
-//             mpl_token_metadata::ID.as_ref(),
-//             mint_pda.0.as_ref(),
-//         ],
-//         &mpl_token_metadata::ID,
-//     );
-//     Instruction {
-//         program_id: crate::id(),
-//         accounts: vec![
-//             AccountMeta::new(signer, true),
-//             AccountMeta::new(bus_pdas[0].0, false),
-//             AccountMeta::new(bus_pdas[1].0, false),
-//             AccountMeta::new(bus_pdas[2].0, false),
-//             AccountMeta::new(bus_pdas[3].0, false),
-//             AccountMeta::new(bus_pdas[4].0, false),
-//             AccountMeta::new(bus_pdas[5].0, false),
-//             AccountMeta::new(bus_pdas[6].0, false),
-//             AccountMeta::new(bus_pdas[7].0, false),
-//             AccountMeta::new(config_pda.0, false),
-//             AccountMeta::new(metadata_pda.0, false),
-//             AccountMeta::new(mint_pda.0, false),
-//             AccountMeta::new(treasury_pda.0, false),
-//             AccountMeta::new(treasury_tokens, false),
-//             AccountMeta::new_readonly(system_program::id(), false),
-//             AccountMeta::new_readonly(spl_token::id(), false),
-//             AccountMeta::new_readonly(spl_associated_token_account::id(), false),
-//             AccountMeta::new_readonly(mpl_token_metadata::ID, false),
-//             AccountMeta::new_readonly(sysvar::rent::id(), false),
-//         ],
-//         data: [
-//             CoalInstruction::InitWood.to_vec(),
-//             InitializeArgs {
-//                 bus_0_bump: bus_pdas[0].1,
-//                 bus_1_bump: bus_pdas[1].1,
-//                 bus_2_bump: bus_pdas[2].1,
-//                 bus_3_bump: bus_pdas[3].1,
-//                 bus_4_bump: bus_pdas[4].1,
-//                 bus_5_bump: bus_pdas[5].1,
-//                 bus_6_bump: bus_pdas[6].1,
-//                 bus_7_bump: bus_pdas[7].1,
-//                 config_bump: config_pda.1,
-//                 metadata_bump: metadata_pda.1,
-//                 mint_bump: mint_pda.1,
-//                 treasury_bump: treasury_pda.1,
-//             }
-//             .to_bytes()
-//             .to_vec(),
-//         ]
-//         .concat(),
-//     }
-// }
 
 pub fn init_chromium(signer: Pubkey) -> Instruction {
     let mint_pda = Pubkey::find_program_address(&[CHROMIUM_MINT, MINT_NOISE.as_slice()], &crate::id());
