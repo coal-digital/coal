@@ -171,6 +171,8 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
             let tool = Tool::try_from_bytes_mut(&mut tool_data)?;
 
             if tool.durability.gt(&0) {
+                // Calculate the additional reward.
+                let max_additional_reward = bus.rewards.saturating_sub(reward);
                 let additional_reward = (reward as u128)
                     .checked_mul(tool.multiplier.min(100) as u128)
                     .unwrap()
@@ -178,9 +180,11 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
                     .unwrap() as u64;
                 msg!("tool additional_reward: {}", additional_reward.saturating_div(ONE_COAL));
                 reward = reward.checked_add(additional_reward.min(tool.durability)).unwrap();
-                
+            
                 // Durability is decremented for the amount added.
-                tool.durability = tool.durability.saturating_sub(additional_reward).max(0);
+                // Only subtract the actual remaining rewards from durability.
+                let actual_additional_reward = additional_reward.min(max_additional_reward);
+                tool.durability = tool.durability.saturating_sub(actual_additional_reward).max(0);
             }
         }
 
