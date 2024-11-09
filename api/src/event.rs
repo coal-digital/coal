@@ -8,6 +8,8 @@ pub struct MineEvent {
     pub difficulty: u64,
     pub reward: u64,
     pub timing: i64,
+    pub tool_reward: u64,
+    pub stake_reward: u64,
 }
 
 impl_to_bytes!(MineEvent);

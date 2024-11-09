@@ -156,6 +156,9 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
     }
 
     // Apply multipliers.
+    let mut tool_reward: u64 = 0;
+    let mut stake_reward: u64 = 0;
+
     if optional_accounts.len().ge(&1) {
         let mut shift: usize = 0;
 
@@ -178,12 +181,13 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
                     .unwrap()
                     .checked_div(100)
                     .unwrap() as u64;
-                msg!("tool additional_reward: {}", additional_reward.saturating_div(ONE_COAL));
-                reward = reward.checked_add(additional_reward.min(tool.durability)).unwrap();
+                tool_reward = additional_reward.min(tool.durability);
+                msg!("tool_reward: {}", tool_reward.saturating_div(ONE_COAL));
+                reward = reward.checked_add(tool_reward).unwrap();
             
                 // Durability is decremented for the amount added.
                 // Only subtract the actual remaining rewards from durability.
-                let actual_additional_reward = additional_reward.min(max_additional_reward);
+                let actual_additional_reward = tool_reward.min(max_additional_reward);
                 tool.durability = tool.durability.saturating_sub(actual_additional_reward).max(0);
             }
         }
@@ -197,13 +201,15 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
             if optional_accounts.len().eq(&(shift + 3)) {
                 let guild_info = &optional_accounts[shift + 2];
                 let guild_stake = load_guild_with_member(guild_info, guild_member_info, signer.key)?;
-                let stake_reward = calculate_stake_multiplier(reward, guild_stake, total_stake, total_multiplier);
-                msg!("guild stake_reward: {}", stake_reward.saturating_div(ONE_COAL));
+                stake_reward = calculate_stake_multiplier(reward, guild_stake, total_stake, total_multiplier);
+                msg!("base reward: {}", reward as f64 / ONE_COAL as f64);
+                msg!("guild stake_reward: {}", stake_reward as f64 / ONE_COAL as f64);
                 reward = reward.checked_add(stake_reward).unwrap();
             } else {
                 let member_stake = load_member(guild_member_info, signer.key)?;
-                let stake_reward = calculate_stake_multiplier(reward, member_stake, total_stake, total_multiplier);
-                msg!("member stake_reward: {}", stake_reward.saturating_div(ONE_COAL));
+                stake_reward = calculate_stake_multiplier(reward, member_stake, total_stake, total_multiplier);
+                msg!("base reward: {}", reward as f64 / ONE_COAL as f64);
+                msg!("member stake_reward: {}", stake_reward as f64 / ONE_COAL as f64);
                 reward = reward.checked_add(stake_reward).unwrap();
             }
         }
@@ -250,6 +256,8 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
             difficulty: difficulty as u64,
             reward: reward_actual,
             timing: t.saturating_sub(t_liveness),
+            tool_reward,
+            stake_reward,
         }
         .to_bytes(),
     );
