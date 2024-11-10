@@ -25,6 +25,10 @@ pub fn load_guild_with_member<'a, 'info>(guild_info: &'a AccountInfo<'info>, mem
         return Err(ProgramError::InvalidAccountOwner);
     }
 
+    if member.is_active.ne(&1) {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
     if member.guild.ne(&guild_info.key) {
         return Err(ProgramError::InvalidAccountOwner);
     }
@@ -41,6 +45,10 @@ pub fn load_member<'a, 'info>(member_info: &'a AccountInfo<'info>, authority: &P
     let member = Member::try_from_bytes(member_data)?;
 
     if member.authority.ne(authority) {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    if member.is_active.ne(&1) {
         return Err(ProgramError::InvalidAccountData);
     }
 
