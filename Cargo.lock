@@ -558,9 +558,9 @@ dependencies = [
 
 [[package]]
 name = "coal-guilds-api"
-version = "1.0.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48857417be74314847a379bbb61135920c31e0ff0fcb09c5acaa48cde64ec354"
+checksum = "7d968321a538463b5d721c04df54aac3bb6b0fee08fc6d86b6e635659d97941c"
 dependencies = [
  "array-const-fn-init",
  "bytemuck",
