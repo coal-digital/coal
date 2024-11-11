@@ -9,6 +9,7 @@ use coal_api::{
     loaders::*,
     state::{Bus, ProofV2, WoodConfig, WoodTool},
 };
+use solana_program::msg;
 #[allow(deprecated)]
 use solana_program::{
     account_info::AccountInfo,
@@ -162,7 +163,10 @@ pub fn process_chop_wood(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
     // Apply tool multiplier.
     //
     // Durability is decremented for the amount added.
-    if optional_accounts.len().eq(&1) {
+
+    let mut tool_reward: u64 = 0;
+
+    if optional_accounts.len().ge(&1) {
         let tool_info = &optional_accounts[0];
 
         if !tool_info.data_is_empty() {
@@ -172,17 +176,22 @@ pub fn process_chop_wood(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
             let tool = WoodTool::try_from_bytes_mut(&mut tool_data)?;
 
             if tool.durability.gt(&0) {
+                // Calculate the additional reward.
+                let max_additional_reward = bus.rewards.saturating_sub(reward);
                 let additional_reward = (reward as u128)
                     .checked_mul(tool.multiplier.min(100) as u128)
                     .unwrap()
                     .checked_div(100)
                     .unwrap() as u64;
-                reward = reward.checked_add(additional_reward.min(tool.durability)).unwrap();
-                
+                tool_reward = additional_reward.min(tool.durability);
+                msg!("tool_reward: {}", tool_reward.saturating_div(ONE_WOOD));
+                reward = reward.checked_add(tool_reward).unwrap();
+            
                 // Durability is decremented for the amount added.
-                tool.durability = tool.durability.saturating_sub(additional_reward).max(0);
+                // Only subtract the actual remaining rewards from durability.
+                let actual_additional_reward = tool_reward.min(max_additional_reward);
+                tool.durability = tool.durability.saturating_sub(actual_additional_reward).max(0);
             }
-    
         }
     }
 
@@ -227,6 +236,8 @@ pub fn process_chop_wood(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
             difficulty: difficulty as u64,
             reward: reward_actual,
             timing: t.saturating_sub(t_liveness),
+            tool_reward,
+            stake_reward: 0,
         }
         .to_bytes(),
     );

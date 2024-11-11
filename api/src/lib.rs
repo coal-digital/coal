@@ -3,6 +3,7 @@ pub mod error;
 pub mod event;
 pub mod instruction;
 pub mod loaders;
+pub mod guild_loaders;
 pub mod state;
 
 pub(crate) use coal_utils as utils;

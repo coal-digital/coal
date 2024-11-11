@@ -2,13 +2,9 @@ use std::mem::size_of;
 
 use drillx::Solution;
 use coal_api::{
-    consts::*,
-    error::CoalError,
-    event::MineEvent,
-    instruction::MineArgs,
-    loaders::*,
-    state::{Config, Proof, Bus, Tool},
+    consts::*, error::CoalError, event::MineEvent, guild_loaders::{load_guild_config, load_guild_with_member, load_member}, instruction::MineArgs, loaders::*, state::{Bus, Config, Proof, Tool}
 };
+use solana_program::msg;
 #[allow(deprecated)]
 use solana_program::{
     account_info::AccountInfo,
@@ -159,30 +155,63 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
         }
     }
 
-    // Apply tool multiplier.
-    //
-    // Durability is decremented for the amount added.
-    if optional_accounts.len().eq(&1) {
-        let tool_info = &optional_accounts[0];
+    // Apply multipliers.
+    let mut tool_reward: u64 = 0;
+    let mut stake_reward: u64 = 0;
 
-        if !tool_info.data_is_empty() {
+    if optional_accounts.len().ge(&1) {
+        let mut shift: usize = 0;
+
+        if !optional_accounts[0].data_is_empty() && is_tool(&optional_accounts[0]) {
+            shift = 1;
+            let tool_info = &optional_accounts[0];
+            // Apply tool multiplier.
+            //
+            // Durability is decremented for the amount added.
             load_tool(&tool_info, signer.key, true)?;
     
             let mut tool_data = tool_info.data.borrow_mut();
             let tool = Tool::try_from_bytes_mut(&mut tool_data)?;
 
             if tool.durability.gt(&0) {
+                // Calculate the additional reward.
+                let max_additional_reward = bus.rewards.saturating_sub(reward);
                 let additional_reward = (reward as u128)
                     .checked_mul(tool.multiplier.min(100) as u128)
                     .unwrap()
                     .checked_div(100)
                     .unwrap() as u64;
-                reward = reward.checked_add(additional_reward.min(tool.durability)).unwrap();
-                
+                tool_reward = additional_reward.min(tool.durability);
+                msg!("tool_reward: {}", tool_reward as f64 / ONE_COAL as f64);
+                reward = reward.checked_add(tool_reward).unwrap();
+            
                 // Durability is decremented for the amount added.
-                tool.durability = tool.durability.saturating_sub(additional_reward).max(0);
+                // Only subtract the actual remaining rewards from durability.
+                let actual_additional_reward = tool_reward.min(max_additional_reward);
+                tool.durability = tool.durability.saturating_sub(actual_additional_reward).max(0);
             }
-    
+        }
+
+        if optional_accounts.len().ge(&(shift + 2)) {
+            let guild_config_info =  &optional_accounts[shift];
+            let guild_member_info = &optional_accounts[shift + 1];
+            
+            let (total_stake, total_multiplier) = load_guild_config(guild_config_info)?;
+
+            if optional_accounts.len().eq(&(shift + 3)) {
+                let guild_info = &optional_accounts[shift + 2];
+                let guild_stake = load_guild_with_member(guild_info, guild_member_info, signer.key)?;
+                stake_reward = calculate_stake_multiplier(reward, guild_stake, total_stake, total_multiplier);
+                msg!("base reward: {}", reward as f64 / ONE_COAL as f64);
+                msg!("guild stake_reward: {}", stake_reward as f64 / ONE_COAL as f64);
+                reward = reward.checked_add(stake_reward).unwrap();
+            } else {
+                let member_stake = load_member(guild_member_info, signer.key)?;
+                stake_reward = calculate_stake_multiplier(reward, member_stake, total_stake, total_multiplier);
+                msg!("base reward: {}", reward as f64 / ONE_COAL as f64);
+                msg!("member stake_reward: {}", stake_reward as f64 / ONE_COAL as f64);
+                reward = reward.checked_add(stake_reward).unwrap();
+            }
         }
     }
 
@@ -227,6 +256,8 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
             difficulty: difficulty as u64,
             reward: reward_actual,
             timing: t.saturating_sub(t_liveness),
+            tool_reward,
+            stake_reward,
         }
         .to_bytes(),
     );
@@ -284,4 +315,14 @@ fn parse_coal_auth_address(data: &[u8]) -> Result<Option<Pubkey>, SanitizeError>
     }
 
     Ok(None)
+}
+
+fn calculate_stake_multiplier(base_reward: u64, stake: u64, total_stake: u64, multiplier: u64) -> u64 {
+    (base_reward as u128)
+        .checked_mul(multiplier as u128)
+        .unwrap()
+        .checked_mul(stake as u128)
+        .unwrap()
+        .checked_div(total_stake as u128)
+        .unwrap() as u64
 }

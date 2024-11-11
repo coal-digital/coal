@@ -1,5 +1,11 @@
 use solana_program::{
-    account_info::AccountInfo, msg, program_error::ProgramError, program_pack::Pack, pubkey::Pubkey, system_program, sysvar
+    msg,
+    account_info::AccountInfo,
+    program_error::ProgramError,
+    program_pack::Pack,
+    pubkey::Pubkey,
+    system_program,
+    sysvar
 };
 use spl_token::state::Mint;
 use mpl_core::{Asset, types::UpdateAuthority};
@@ -776,6 +782,10 @@ pub fn load_tool<'a, 'info>(
     }
 
     Ok((tool.durability, tool.multiplier))
+}
+
+pub fn is_tool<'a, 'info>(info: &'a AccountInfo<'info>,) -> bool {
+    info.data.borrow()[0].eq(&(Tool::discriminator() as u8))
 }
 
 pub fn load_wood_tool<'a, 'info>(

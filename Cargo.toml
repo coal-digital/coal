@@ -3,7 +3,7 @@ resolver = "2"
 members = ["api", "program", "utils"]
 
 [workspace.package]
-version = "2.5.4"
+version = "2.6.0"
 edition = "2021"
 license = "Apache-2.0"
 homepage = "https://coal.supply"
@@ -22,12 +22,15 @@ mpl-token-metadata = "4.1.2"
 num_enum = "0.7.2"
 coal-api = { path = "api", version = "2.1.0" }
 coal-utils = { path = "utils", features = ["spl"], version = "2.1.0" }
+coal-guilds-api = "1.1.0"
 solana-program = "^1.18"
 spl-token = { version = "^4", features = ["no-entrypoint"] }
 spl-associated-token-account = { version = "^2.3", features = [ "no-entrypoint" ] } 
 static_assertions = "1.1.0"
 thiserror = "1.0.57"
+steel = { features = ["spl"], version = "1.2" }
 
 # [patch.crates-io]
 # drillx = { path = "../drillx/drillx" }
+# coal-guilds-api = { path = "../guilds/api", version = "1.0.0" }
 
