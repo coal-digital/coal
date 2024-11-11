@@ -182,7 +182,7 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
                     .checked_div(100)
                     .unwrap() as u64;
                 tool_reward = additional_reward.min(tool.durability);
-                msg!("tool_reward: {}", tool_reward.saturating_div(ONE_COAL));
+                msg!("tool_reward: {}", tool_reward as f64 / ONE_COAL as f64);
                 reward = reward.checked_add(tool_reward).unwrap();
             
                 // Durability is decremented for the amount added.
