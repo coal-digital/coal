@@ -14,16 +14,16 @@ pub const INITIAL_BASE_COAL_REWARD_RATE: u64 = BASE_COAL_REWARD_RATE_MIN_THRESHO
 pub const INITIAL_BASE_WOOD_REWARD_RATE: u64 = BASE_WOOD_REWARD_RATE_MIN_THRESHOLD;
 
 /// The minimum allowed base reward rate, at which point the min difficulty should be increased
-pub const BASE_COAL_REWARD_RATE_MIN_THRESHOLD: u64 = 2u64.pow(5);
+pub const BASE_COAL_REWARD_RATE_MIN_THRESHOLD: u64 = 2u64.pow(5).saturating_mul(1000).saturating_div(128);
 
 /// The maximum allowed base reward rate, at which point the min difficulty should be decreased.
-pub const BASE_COAL_REWARD_RATE_MAX_THRESHOLD: u64 = 2u64.pow(8) * COAL_EXTRACTION_MULTIPLIER;
+pub const BASE_COAL_REWARD_RATE_MAX_THRESHOLD: u64 = 2u64.pow(8).saturating_mul(1000).saturating_div(128);
 
 /// The minimum allowed base reward rate, at which point the min difficulty should be increased
-pub const BASE_WOOD_REWARD_RATE_MIN_THRESHOLD: u64 = 2u64.pow(5) * WOOD_EXTRACTION_MULTIPLIER;
+pub const BASE_WOOD_REWARD_RATE_MIN_THRESHOLD: u64 = 2u64.pow(5).saturating_mul(10);
 
 /// The maximum allowed base reward rate, at which point the min difficulty should be decreased.
-pub const BASE_WOOD_REWARD_RATE_MAX_THRESHOLD: u64 = 2u64.pow(8) * WOOD_EXTRACTION_MULTIPLIER;
+pub const BASE_WOOD_REWARD_RATE_MAX_THRESHOLD: u64 = 2u64.pow(8).saturating_mul(10);
 
 /// The spam/liveness tolerance in seconds.
 pub const TOLERANCE: i64 = 5;
@@ -53,24 +53,19 @@ pub const ONE_WOOD: u64 = 10u64.pow(TOKEN_DECIMALS as u32);
 pub const ONE_MINUTE: i64 = 60;
 
 /// The number of minutes in a program epoch.
-pub const COAL_EPOCH_MINUTES: i64 = 2;
-pub const WOOD_EPOCH_MINUTES: i64 = 5;
+pub const EPOCH_MINUTES: i64 = 5;
 
 /// The duration of a program epoch, in seconds.
-pub const COAL_EPOCH_DURATION: i64 = ONE_MINUTE * COAL_EPOCH_MINUTES;
-pub const WOOD_EPOCH_DURATION: i64 = ONE_MINUTE * WOOD_EPOCH_MINUTES;
+pub const COAL_EPOCH_DURATION: i64 = ONE_MINUTE * EPOCH_MINUTES;
+pub const WOOD_EPOCH_DURATION: i64 = ONE_MINUTE * EPOCH_MINUTES;
 /// The maximum token supply (21 million).
 pub const MAX_COAL_SUPPLY: u64 = ONE_COAL * 21_000_000;
 
-/// The multiplier for the target quantity of COAL to be mined per epoch.
-pub const COAL_EXTRACTION_MULTIPLIER: u64 = 1000;
-pub const WOOD_EXTRACTION_MULTIPLIER: u64 = 10;
-
 /// The target quantity of COAL to be mined per epoch.
-pub const TARGET_COAL_EPOCH_REWARDS: u64 = ONE_COAL * COAL_EXTRACTION_MULTIPLIER * COAL_EPOCH_MINUTES as u64;
+pub const TARGET_COAL_EPOCH_REWARDS: u64 = ONE_COAL.saturating_mul(1000).saturating_div(128) * EPOCH_MINUTES as u64;
 
 /// The initial quantity of WOOD distributed to each bus (1000 WOOD).
-pub const INITIAL_WOOD_EPOCH_REWARDS: u64 = ONE_WOOD * 1000;
+pub const INITIAL_WOOD_EPOCH_REWARDS: u64 = ONE_WOOD.saturating_mul(1000);
 
 /// The minimum rewards a bus can have for each epoch 0.1 WOOD
 pub const MIN_WOOD_EPOCH_REWARDS: u64 = ONE_WOOD / 10;
@@ -82,7 +77,6 @@ pub const MAX_WOOD_EPOCH_REWARDS: u64 = ONE_WOOD * 4000;
 pub const WOOD_PROPOGATION_RATE: u64 = 20;
 
 /// The maximum quantity of COAL that can be mined per epoch.
-/// Inflation rate ≈ 1000 COAL / min (min 0, max 8)
 pub const MAX_COAL_EPOCH_REWARDS: u64 = TARGET_COAL_EPOCH_REWARDS * BUS_COUNT as u64;
 
 /// The quantity of COAL each bus is allowed to issue per epoch.
@@ -164,6 +158,8 @@ pub const ORE_PROGRAM_ID_BYTES: [u8; 32] = unsafe { *(&ORE_PROGRAM_ID as *const 
 
 /// Forge collection ids
 pub const FORGE_PICKAXE_COLLECTION: Pubkey = pubkey!("CuaLHUJA1dyQ6AYcTcMZrCoBqssSJbqkY7VfEEFdxzCk");
+pub const BASE_TOOL_MULTIPLIER: u64 = 300;
+pub const MAX_TOOL_MULTIPLIER: u64 = 600;
 
 /// The addresses of the bus accounts.
 pub const COAL_BUS_ADDRESSES: [Pubkey; BUS_COUNT] = array_const_fn_init![const_coal_bus_address; 8];

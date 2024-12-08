@@ -179,7 +179,7 @@ pub fn process_chop_wood(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
                 // Calculate the additional reward.
                 let max_additional_reward = bus.rewards.saturating_sub(reward);
                 let additional_reward = (reward as u128)
-                    .checked_mul(tool.multiplier.min(100) as u128)
+                    .checked_mul(tool.multiplier.max(BASE_TOOL_MULTIPLIER).min(MAX_TOOL_MULTIPLIER) as u128)
                     .unwrap()
                     .checked_div(100)
                     .unwrap() as u64;

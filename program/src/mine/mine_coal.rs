@@ -176,8 +176,9 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
             if tool.durability.gt(&0) {
                 // Calculate the additional reward.
                 let max_additional_reward = bus.rewards.saturating_sub(reward);
+                let tool_multiplier = tool.multiplier.max(BASE_TOOL_MULTIPLIER).min(MAX_TOOL_MULTIPLIER);
                 let additional_reward = (reward as u128)
-                    .checked_mul(tool.multiplier.min(100) as u128)
+                    .checked_mul(tool_multiplier as u128)
                     .unwrap()
                     .checked_div(100)
                     .unwrap() as u64;
