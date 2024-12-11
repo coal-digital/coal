@@ -216,12 +216,8 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
         }
     }
 
-    // Limit payout amount to whatever is left in the bus.
-    //
-    // Busses are limited to distributing n COAL per epoch. This is also the maximum amount that will be paid out
-    // for any given hash.
-    // Quick fix to prevent the bus from being drained.
-    let reward_actual = reward.min(bus.rewards);
+    // Limit payout amount to whatever is left in the bus and the target per minute.
+    let reward_actual = reward.min(bus.rewards).min(TARGET_COAL_REWARDS);
 
     // Update balances.
     //
