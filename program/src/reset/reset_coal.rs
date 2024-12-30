@@ -58,16 +58,7 @@ pub fn process_reset_coal<'a, 'info>(accounts: &'a [AccountInfo<'info>], _data: 
     let mint = Mint::unpack(&mint_info.data.borrow()).expect("Failed to parse mint");
     if mint.supply.ge(&MAX_COAL_SUPPLY) {
         return Err(CoalError::MaxSupply.into());
-    }
-
-    // For each 5% of total supply, reduce the BUS_EPOCH_REWARDS and MAX_EPOCH_REWARDS by 50%
-    // The halving is done to incentivize the accumulation of the token.
-    // Halving should only occur at 5% intervals.
-    let supply_percentage = (mint.supply as f64 / MAX_COAL_SUPPLY as f64) * 100.0;
-    let halving_factor = 2u64.pow((supply_percentage / 5.0) as u32);
-    let adjusted_target_rewards = TARGET_COAL_EPOCH_REWARDS / halving_factor;
-    let adjusted_bus_epoch_rewards = BUS_COAL_EPOCH_REWARDS / halving_factor;
-    let adjusted_max_epoch_rewards = MAX_COAL_EPOCH_REWARDS / halving_factor;   
+    }  
 
     // Reset bus accounts and calculate actual rewards mined since last reset.
     let mut total_remaining_rewards = 0u64;
@@ -89,11 +80,11 @@ pub fn process_reset_coal<'a, 'info>(accounts: &'a [AccountInfo<'info>], _data: 
             total_theoretical_rewards.saturating_add(bus.theoretical_rewards);
 
         // Reset bus account for new epoch.
-        bus.rewards = adjusted_bus_epoch_rewards;
+        bus.rewards = BUS_COAL_EPOCH_REWARDS;
         bus.theoretical_rewards = 0;
         bus.top_balance = 0;
     }
-    let total_epoch_rewards = adjusted_max_epoch_rewards.saturating_sub(total_remaining_rewards);
+    let total_epoch_rewards = MAX_COAL_EPOCH_REWARDS.saturating_sub(total_remaining_rewards);
 
     // Update global top balance.
     config.top_balance = top_balance;
@@ -102,27 +93,23 @@ pub fn process_reset_coal<'a, 'info>(accounts: &'a [AccountInfo<'info>], _data: 
     config.base_reward_rate = calculate_new_reward_rate(
         config.base_reward_rate, 
         total_theoretical_rewards, 
-        adjusted_target_rewards, 
-        adjusted_bus_epoch_rewards,
+        TARGET_COAL_EPOCH_REWARDS, 
+        BUS_COAL_EPOCH_REWARDS,
         SMOOTHING_FACTOR,
         SMOOTHING_FACTOR
     );
-
-    let adjusted_base_reward_threshold = BASE_COAL_REWARD_RATE_MIN_THRESHOLD / halving_factor;
-    let adjusted_base_reward_max_threshold = BASE_COAL_REWARD_RATE_MAX_THRESHOLD / halving_factor;
    
     // If base reward rate is too low, increment min difficulty by 1 and double base reward rate.
-    if config.base_reward_rate.le(&adjusted_base_reward_threshold) {
+    if config.base_reward_rate.le(&BASE_COAL_REWARD_RATE_MIN_THRESHOLD) {
         config.min_difficulty = config.min_difficulty.checked_add(1).unwrap();
         config.base_reward_rate = config.base_reward_rate.checked_mul(2).unwrap();
     }
 
     // If base reward rate is too high, decrement min difficulty by 1 and halve base reward rate.
-    if config.base_reward_rate.ge(&adjusted_base_reward_max_threshold) && config.min_difficulty.gt(&1) {
+    if config.base_reward_rate.ge(&BASE_COAL_REWARD_RATE_MAX_THRESHOLD) && config.min_difficulty.gt(&1) {
         config.min_difficulty = config.min_difficulty.checked_sub(1).unwrap();
         config.base_reward_rate = config.base_reward_rate.checked_div(2).unwrap();
     }
-
     
     // Fund the treasury token account.
     let amount = MAX_COAL_SUPPLY
