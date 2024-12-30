@@ -118,7 +118,7 @@ pub fn process_mine_coal(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult
                 .unwrap()
                 .checked_div(config.top_balance as u128)
                 .unwrap() as u64;
-            reward = reward.checked_add(staking_reward).unwrap();
+            reward = reward.checked_add(staking_reward.checked_mul(12).unwrap()).unwrap();
         }
 
         // Update bus stake tracker.
