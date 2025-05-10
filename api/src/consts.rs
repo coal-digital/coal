@@ -62,7 +62,7 @@ pub const WOOD_EPOCH_DURATION: i64 = ONE_MINUTE * EPOCH_MINUTES;
 pub const MAX_COAL_SUPPLY: u64 = ONE_COAL * 21_000_000;
 
 /// The target quantity of COAL to be mined per minute.
-pub const TARGET_COAL_REWARDS: u64 = ONE_COAL.saturating_mul(1000).saturating_div(128);
+pub const TARGET_COAL_REWARDS: u64 = ONE_COAL.saturating_mul(1000).saturating_div(256);
 
 /// The target quantity of COAL to be mined per epoch.
 pub const TARGET_COAL_EPOCH_REWARDS: u64 = TARGET_COAL_REWARDS * EPOCH_MINUTES as u64;
